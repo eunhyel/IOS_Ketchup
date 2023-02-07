@@ -9,10 +9,12 @@ import RxSwift
 import RxCocoa
 import Kingfisher
 import GoogleSignIn
+import Firebase
 import GoogleAPIClientForREST
 import GTMSessionFetcher
 import CoreData
 import Lottie
+import FirebaseAuth
 
 class BackUpView: XibView{
     
@@ -30,7 +32,7 @@ class BackUpView: XibView{
     let googleDriveService = GTLRDriveService()
     var googleUser: GIDGoogleUser?
     var uploadFolderID: String?
-    var lottieAnimation = AnimationView()
+    var lottieAnimation = LottieAnimationView()
     
     fileprivate let appDelegate = UIApplication.shared.delegate as! AppDelegate
     lazy var persistenContainer = CoreDataManager.persistenContainer
@@ -132,12 +134,19 @@ class BackUpView: XibView{
     /* ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ Google ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ */
     
     func autoGoogleLogin(){
-//        GIDSignIn.sharedInstance.delegate = self
-//        GIDSignIn.sharedInstance.scopes = [kGTLRAuthScopeDrive]
-//        GIDSignIn.sharedInstance.presentingViewController = topMostController()
+        guard let clientID = FirebaseApp.app()?.options.clientID else { return }
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
         
-        if GIDSignIn.sharedInstance.hasPreviousSignIn() {
-            GIDSignIn.sharedInstance.restorePreviousSignIn()
+        if GoogleSignIn.GIDSignIn.sharedInstance.hasPreviousSignIn() {
+            GoogleSignIn.GIDSignIn.sharedInstance.restorePreviousSignIn() { signResult, error in
+                guard let result = signResult else {
+                    return
+                }
+                self.google_id_label.text = "ID \(result.profile?.email ?? "No email")"
+                self.googleDriveService.authorizer = result.fetcherAuthorizer
+                self.googleUser = result
+            }
             isGoogleLogin = true
         }else {
             log.d("구글 로그인 한적이 없어서 한번은 해야함.")
@@ -146,10 +155,19 @@ class BackUpView: XibView{
     
     
     func googleLogin(){
-        
-        let signInConfig = GIDConfiguration.init(clientID: "150068919703-frc9svv2ssrbni04kqb4e54b90021m15.apps.googleusercontent.com")
-        GIDSignIn.sharedInstance.signIn(with: signInConfig, presenting: getNavigationController())
+        let additionalScopes = ["https://www.googleapis.com/auth/drive"]
+        GIDSignIn.sharedInstance.signIn(withPresenting: getNavigationController(), hint: nil, additionalScopes: additionalScopes) { signResult, error in
+            guard let result = signResult else {
+                return
+            }
+            
+            self.google_id_label.text = "ID \(result.user.profile?.email ?? "No email")"
+            
+            self.googleDriveService.authorizer = result.user.fetcherAuthorizer
+            self.googleUser = result.user
+        }
         isGoogleLogin = true
+        
     }
     
     func sign(_ signIn: GIDSignIn!, didSignInFor user: GIDGoogleUser!, withError error: Error!) {
@@ -160,8 +178,7 @@ class BackUpView: XibView{
         
         log.d("User email: \(googleUser.profile?.email ?? "No email")")
         if error == nil {
-            // Include authorization headers/values with each Drive API request.
-            self.googleDriveService.authorizer = googleUser.authentication.fetcherAuthorizer()
+            self.googleDriveService.authorizer = googleUser.fetcherAuthorizer
             self.googleUser = googleUser
         } else {
             self.googleDriveService.authorizer = nil
@@ -182,7 +199,6 @@ class BackUpView: XibView{
         
         getFolderID(name: myFolderName, service: googleDriveService, user: googleUser) {
             self.uploadFolderID = $0
-            
             if self.uploadFolderID == nil {
                     self.createFolder (name : myFolderName, service : self.googleDriveService) {
                         self.uploadFolderID = $0
@@ -200,10 +216,8 @@ class BackUpView: XibView{
     //2. 기본폴더 검색
     func getFolderID(name: String, service: GTLRDriveService, user: GIDGoogleUser, completion: @escaping (String?) -> Void) {
         let query = GTLRDriveQuery_FilesList.query()
-        // Comma-separated list of areas the search applies to. E.g., appDataFolder, photos, drive.
         query.spaces = "drive"
         
-        // Comma-separated list of access levels to search in. Some possible values are "user,allTeamDrives" or "user"
         query.corpora = "user"
             
         let withName = "name = '\(name)'" // Case insensitive!
@@ -211,15 +225,19 @@ class BackUpView: XibView{
         let ownedByUser = "'\(user.profile!.email)' in owners"
         query.q = "\(withName) and \(foldersOnly) and \(ownedByUser) and trashed=false"
         
+        log.d(user)
         service.executeQuery(query) { (_, result, error) in
+            log.d(result)
+            guard let result = result else {
+                completion(nil)
+                return
+            }
             if let unwrappedError = error {
                 Toast.show("업로드를 실패ㅜ")
                 log.d(unwrappedError.localizedDescription)
             }
                                      
             let folderList = result as! GTLRDrive_FileList
-
-            // For brevity, assumes only one folder is returned.
             completion(folderList.files?.first?.identifier)
         }
     }
@@ -232,10 +250,14 @@ class BackUpView: XibView{
         folder.mimeType = "application/vnd.google-apps.folder"
         folder.name = name
         
-        // Google Drive folders are files with a special MIME-type.
         let query = GTLRDriveQuery_FilesCreate.query(withObject: folder, uploadParameters: nil)
         
         self.googleDriveService.executeQuery(query) { (_, file, error) in
+            log.d(self.googleUser?.profile?.email)
+            guard let file = file else {
+                completion("")
+                return
+            }
             if let unwrappedError = error {
                 Toast.show("업로드를 실패ㅜ.")
                 log.d(unwrappedError.localizedDescription)
@@ -263,16 +285,12 @@ class BackUpView: XibView{
         file.name = name
         file.parents = [folderID]
         
-        // Optionally, GTLRUploadParameters can also be created with a Data object.
         let uploadParameters = GTLRUploadParameters(fileURL: fileURL, mimeType: mimeType)
         
-        //let upload = GTLRUploadParameters(data: .empty, mimeType: mimeType)
         
         let query = GTLRDriveQuery_FilesCreate.query(withObject: file, uploadParameters: uploadParameters)
         
         service.uploadProgressBlock = { _, totalBytesUploaded, totalBytesExpectedToUpload in
-            // This block is called multiple times during upload and can
-            // be used to update a progress indicator visible to the user.
             log.d(totalBytesUploaded)
             log.d(totalBytesExpectedToUpload)
         }
@@ -285,7 +303,6 @@ class BackUpView: XibView{
                     log.d(unwrappedError.localizedDescription)
                 }
                 else {
-                    // Successful upload if no error is returned.
                     Toast.show("백업 성공!")
                     self.loadingStop()
                     log.d(result.debugDescription)
@@ -296,7 +313,6 @@ class BackUpView: XibView{
 
     
     func getAndSaveFileromGoogle() {
-      //resetAllRecords()
       let query = GTLRDriveQuery_FilesList.query()
       query.spaces = "drive"
       query.q = "trashed=false"
@@ -414,7 +430,7 @@ class BackUpView: XibView{
     
 
     func setLottieImage(){
-        let animation = Animation.named("ani_catchop_loader", subdirectory: "LottieImage")
+        let animation = LottieAnimation.named("ani_catchop_loader", subdirectory: "LottieImage")
         self.lottieAnimation.animation = animation
         
         self.lottieAnimation.frame = self.lottie_view.bounds

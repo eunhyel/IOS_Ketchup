@@ -10,10 +10,10 @@ target 'Ketchup' do
   
   # Image, Gif (움짤, 사진)
   pod 'CropViewController'
-  pod 'lottie-ios'
+  pod 'lottie-ios', '4.0.1'
   
   # data BackUp/DB
-  pod 'GoogleSignIn'# '~> 6.0.0'
+  pod 'GoogleSignIn'#, '6.0.0'
   pod 'GoogleAPIClientForREST/Drive', '~> 1.3.7'
   pod 'Firebase/Core', '10.1.0'
   pod 'Firebase/Auth', '10.1.0'

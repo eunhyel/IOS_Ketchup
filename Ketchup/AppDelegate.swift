@@ -65,8 +65,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         isICloudContainerAvailable()
         FirebaseApp.configure()
         //FirebaseApp.setValue("aa", forKey: "aa")
-        
-        
+
         //GIDSignIn.sharedInstance.clientID = "150068919703-frc9svv2ssrbni04kqb4e54b90021m15.apps.googleusercontent.com"
         
         FontBlaster.blast { fonts in

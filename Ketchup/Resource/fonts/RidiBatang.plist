@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Id</key>
+	<integer>2</integer>
+	<key>Family Name</key>
+	<string>RidiBatang</string>
+	<key>Default</key>
+	<string>RidiBatang</string>
+	<key>Medium</key>
+	<string>RidiBatang</string>
+	<key>Bold</key>
+	<string>RidiBatang</string>
+</dict>
+</plist>

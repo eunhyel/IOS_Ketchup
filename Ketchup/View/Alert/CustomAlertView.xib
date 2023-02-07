@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="17701" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17703"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="CustomAlertView" customModule="Ketchup" customModuleProvider="target">
+            <connections>
+                <outlet property="left_btn" destination="heS-zA-n1Q" id="wFJ-7n-tEk"/>
+                <outlet property="message_label" destination="BIv-g7-sWN" id="Rbe-uk-Fcs"/>
+                <outlet property="right_btn" destination="gHw-uv-Gei" id="I83-WH-iLB"/>
+                <outlet property="super_view" destination="nvh-NZ-nJa" id="IpB-hp-s8e"/>
+            </connections>
+        </placeholder>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view contentMode="scaleToFill" id="lrF-Fg-bTe">
+            <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+            <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+            <subviews>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="q7B-iO-fSR">
+                    <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
+                    <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.40000000000000002" colorSpace="custom" customColorSpace="sRGB"/>
+                </view>
+                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="nvh-NZ-nJa">
+                    <rect key="frame" x="47.5" y="242" width="280" height="183"/>
+                    <subviews>
+                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="idc-WL-zwl">
+                            <rect key="frame" x="0.0" y="0.0" width="280" height="110.5"/>
+                            <subviews>
+                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="해당 이미지를 삭제하시겠습니까?" textAlignment="center" lineBreakMode="characterWrap" numberOfLines="10" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="BIv-g7-sWN">
+                                    <rect key="frame" x="27" y="70" width="225" height="19.5"/>
+                                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                                    <color key="textColor" red="0.11372549019607843" green="0.11372549019607843" blue="0.035294117647058823" alpha="1" colorSpace="calibratedRGB"/>
+                                    <nil key="highlightedColor"/>
+                                </label>
+                                <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="img-alim-tit" translatesAutoresizingMaskIntoConstraints="NO" id="eGY-T9-efB">
+                                    <rect key="frame" x="95" y="10" width="90" height="40"/>
+                                    <constraints>
+                                        <constraint firstAttribute="height" constant="40" id="EdA-iM-1xK"/>
+                                        <constraint firstAttribute="width" constant="90" id="raT-5a-iqn"/>
+                                    </constraints>
+                                </imageView>
+                            </subviews>
+                            <constraints>
+                                <constraint firstItem="BIv-g7-sWN" firstAttribute="leading" secondItem="idc-WL-zwl" secondAttribute="leading" constant="27" id="0Hy-Yr-H8K"/>
+                                <constraint firstItem="eGY-T9-efB" firstAttribute="top" secondItem="idc-WL-zwl" secondAttribute="top" constant="10" id="Q0F-Qi-ZjZ"/>
+                                <constraint firstAttribute="trailing" secondItem="BIv-g7-sWN" secondAttribute="trailing" constant="28" id="WLH-72-BDN"/>
+                                <constraint firstItem="eGY-T9-efB" firstAttribute="centerX" secondItem="idc-WL-zwl" secondAttribute="centerX" id="kWu-Ic-qzN"/>
+                                <constraint firstItem="BIv-g7-sWN" firstAttribute="top" secondItem="eGY-T9-efB" secondAttribute="bottom" constant="20" id="pQL-Sd-SZv"/>
+                                <constraint firstAttribute="bottom" secondItem="BIv-g7-sWN" secondAttribute="bottom" constant="21" id="qgT-3M-mt6"/>
+                            </constraints>
+                        </view>
+                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gxS-gE-1QM">
+                            <rect key="frame" x="0.0" y="107.5" width="280" height="75.5"/>
+                            <subviews>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="heS-zA-n1Q">
+                                    <rect key="frame" x="63" y="1.5" width="54" height="54"/>
+                                    <constraints>
+                                        <constraint firstAttribute="height" constant="54" id="S07-wt-naY"/>
+                                        <constraint firstAttribute="width" constant="54" id="xZp-gQ-c6Y"/>
+                                    </constraints>
+                                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                                    <state key="normal" title="아니요" backgroundImage="img-btn-bg">
+                                        <color key="titleColor" red="0.11372549019607843" green="0.11372549019607843" blue="0.11372549019607843" alpha="1" colorSpace="calibratedRGB"/>
+                                    </state>
+                                </button>
+                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="gHw-uv-Gei">
+                                    <rect key="frame" x="163" y="1.5" width="54" height="54"/>
+                                    <constraints>
+                                        <constraint firstAttribute="width" constant="54" id="rw6-cf-P06"/>
+                                        <constraint firstAttribute="height" constant="54" id="xdP-74-Jwg"/>
+                                    </constraints>
+                                    <fontDescription key="fontDescription" type="system" pointSize="16"/>
+                                    <state key="normal" title="예" backgroundImage="img-btn-bg">
+                                        <color key="titleColor" red="0.1137254902" green="0.1137254902" blue="0.1137254902" alpha="1" colorSpace="calibratedRGB"/>
+                                    </state>
+                                </button>
+                            </subviews>
+                            <constraints>
+                                <constraint firstAttribute="trailing" secondItem="gHw-uv-Gei" secondAttribute="trailing" constant="63" id="K2v-DN-4S3"/>
+                                <constraint firstAttribute="bottom" secondItem="gHw-uv-Gei" secondAttribute="bottom" constant="20" symbolic="YES" id="M5U-W7-kQG"/>
+                                <constraint firstAttribute="bottom" secondItem="heS-zA-n1Q" secondAttribute="bottom" constant="20" id="StV-iQ-IXH"/>
+                                <constraint firstItem="heS-zA-n1Q" firstAttribute="leading" secondItem="gxS-gE-1QM" secondAttribute="leading" constant="63" id="Wkl-uH-qCk"/>
+                            </constraints>
+                        </view>
+                    </subviews>
+                    <color key="backgroundColor" red="1" green="0.92156862745098034" blue="0.77647058823529413" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                    <constraints>
+                        <constraint firstAttribute="trailing" secondItem="idc-WL-zwl" secondAttribute="trailing" id="Acw-zx-E2n"/>
+                        <constraint firstItem="gxS-gE-1QM" firstAttribute="leading" secondItem="nvh-NZ-nJa" secondAttribute="leading" id="Agn-Mt-kdq"/>
+                        <constraint firstAttribute="height" secondItem="idc-WL-zwl" secondAttribute="height" multiplier="1.65455" id="Mit-k3-eBm"/>
+                        <constraint firstAttribute="trailing" secondItem="gxS-gE-1QM" secondAttribute="trailing" id="RAm-BN-uXK"/>
+                        <constraint firstItem="idc-WL-zwl" firstAttribute="top" secondItem="nvh-NZ-nJa" secondAttribute="top" id="ULw-In-dnQ"/>
+                        <constraint firstItem="idc-WL-zwl" firstAttribute="leading" secondItem="nvh-NZ-nJa" secondAttribute="leading" id="csX-HO-mir"/>
+                        <constraint firstAttribute="bottom" secondItem="gxS-gE-1QM" secondAttribute="bottom" id="dF7-FH-EDu"/>
+                        <constraint firstItem="gxS-gE-1QM" firstAttribute="leading" secondItem="nvh-NZ-nJa" secondAttribute="leading" id="dQO-7G-GU9"/>
+                        <constraint firstItem="gxS-gE-1QM" firstAttribute="top" secondItem="idc-WL-zwl" secondAttribute="bottom" constant="-3" id="gD6-ld-GiI"/>
+                        <constraint firstAttribute="trailing" secondItem="gxS-gE-1QM" secondAttribute="trailing" id="gQI-h3-XCq"/>
+                        <constraint firstAttribute="width" constant="280" id="nWA-Ml-1HT"/>
+                        <constraint firstItem="gxS-gE-1QM" firstAttribute="leading" secondItem="idc-WL-zwl" secondAttribute="trailing" constant="-280" id="v5l-SD-7cA"/>
+                    </constraints>
+                    <userDefinedRuntimeAttributes>
+                        <userDefinedRuntimeAttribute type="number" keyPath="layer.cornerRadius">
+                            <integer key="value" value="40"/>
+                        </userDefinedRuntimeAttribute>
+                    </userDefinedRuntimeAttributes>
+                </view>
+            </subviews>
+            <viewLayoutGuide key="safeArea" id="YLc-Gi-fIy"/>
+            <constraints>
+                <constraint firstItem="nvh-NZ-nJa" firstAttribute="centerY" secondItem="YLc-Gi-fIy" secondAttribute="centerY" id="8hY-by-YRd"/>
+                <constraint firstItem="nvh-NZ-nJa" firstAttribute="centerX" secondItem="lrF-Fg-bTe" secondAttribute="centerX" id="MTL-VB-mLx"/>
+                <constraint firstItem="q7B-iO-fSR" firstAttribute="top" secondItem="lrF-Fg-bTe" secondAttribute="top" id="R0D-4q-Rsm"/>
+                <constraint firstItem="q7B-iO-fSR" firstAttribute="leading" secondItem="lrF-Fg-bTe" secondAttribute="leading" id="Wbd-C7-ib3"/>
+                <constraint firstAttribute="trailing" secondItem="q7B-iO-fSR" secondAttribute="trailing" id="bGI-6f-Ehb"/>
+                <constraint firstAttribute="bottom" secondItem="q7B-iO-fSR" secondAttribute="bottom" id="r2y-RO-i8f"/>
+                <constraint firstItem="nvh-NZ-nJa" firstAttribute="centerX" secondItem="YLc-Gi-fIy" secondAttribute="centerX" id="x6d-n6-F3y"/>
+            </constraints>
+            <point key="canvasLocation" x="138.40000000000001" y="130.88455772113943"/>
+        </view>
+    </objects>
+    <resources>
+        <image name="img-alim-tit" width="180" height="80"/>
+        <image name="img-btn-bg" width="108" height="108"/>
+    </resources>
+</document>

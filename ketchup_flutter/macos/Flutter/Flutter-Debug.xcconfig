@@ -1,0 +1,2 @@
+#include? "Pods/Target Support Files/Pods-Ketchup/Pods-Ketchup.debug.xcconfig"
+#include "ephemeral/Flutter-Generated.xcconfig"

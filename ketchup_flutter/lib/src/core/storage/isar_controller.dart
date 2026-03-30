@@ -12,10 +12,15 @@ import 'package:path_provider/path_provider.dart';
 class IsarController extends StateNotifier<Isar> {
   IsarController(super.initial);
 
+  Isar get currentIsar => state;
+
   /// Exports a compacted snapshot (safe while DB is open).
   Future<Uint8List> exportCompactedBytes() async {
     final Directory dir = await getApplicationDocumentsDirectory();
-    final String tmpPath = p.join(dir.path, 'ketchup_export_${DateTime.now().millisecondsSinceEpoch}.isar');
+    final String tmpPath = p.join(
+      dir.path,
+      'ketchup_export_${DateTime.now().millisecondsSinceEpoch}.isar',
+    );
     final File tmp = File(tmpPath);
     try {
       await state.copyToFile(tmpPath);
@@ -29,10 +34,18 @@ class IsarController extends StateNotifier<Isar> {
 
   /// Replaces `ketchup.isar` with [bytes] after verification.
   /// Rolls back the DB file on failure, then rethrows.
-  Future<void> restoreFromVerifiedBytes(Uint8List bytes) async {
+  ///
+  /// [afterOpen]는 새 DB가 연 직후·[state] 갱신 전에 호출됩니다(복원 중 잠깐 글꼴이 바뀌는 깜빡임 방지).
+  Future<void> restoreFromVerifiedBytes(
+    Uint8List bytes, {
+    Future<void> Function(Isar isar)? afterOpen,
+  }) async {
     final Directory dir = await getApplicationDocumentsDirectory();
     final String mainPath = p.join(dir.path, AppIsar.fileName);
-    final String rollbackPath = p.join(dir.path, '${AppIsar.fileName}.rollback');
+    final String rollbackPath = p.join(
+      dir.path,
+      '${AppIsar.fileName}.rollback',
+    );
     final File mainFile = File(mainPath);
     final File rollbackFile = File(rollbackPath);
 
@@ -51,6 +64,9 @@ class IsarController extends StateNotifier<Isar> {
       await reopened.txn(() async {
         await reopened.isarDiaryEntrys.count();
       });
+      if (afterOpen != null) {
+        await afterOpen(reopened);
+      }
       state = reopened;
     } catch (e, st) {
       debugPrint('restoreFromVerifiedBytes failed: $e\n$st');

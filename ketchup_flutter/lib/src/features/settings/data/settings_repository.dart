@@ -6,6 +6,7 @@ abstract class SettingsRepository {
   Future<AppSettings> setUseLock(bool enabled);
   Future<AppSettings> setFontName(String fontName);
   Future<AppSettings> setUseCloudSync(bool enabled);
+  Future<AppSettings> setUseIcloudSync(bool enabled);
 }
 
 class IsarSettingsRepository implements SettingsRepository {
@@ -36,6 +37,14 @@ class IsarSettingsRepository implements SettingsRepository {
   Future<AppSettings> setUseCloudSync(bool enabled) async {
     final AppSettings current = await _local.load();
     final AppSettings next = current.copyWith(useCloudSync: enabled);
+    await _local.save(next);
+    return next;
+  }
+
+  @override
+  Future<AppSettings> setUseIcloudSync(bool enabled) async {
+    final AppSettings current = await _local.load();
+    final AppSettings next = current.copyWith(useIcloudSync: enabled);
     await _local.save(next);
     return next;
   }

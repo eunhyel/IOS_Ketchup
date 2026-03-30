@@ -12,10 +12,14 @@ class IsarAppSettings {
   /// 기존 DB 호환: 없으면 null → false.
   bool? useCloudSync;
 
+  /// 기존 DB 호환: 없으면 null → false.
+  bool? useIcloudSync;
+
   AppSettings toDomain() => AppSettings(
         useLock: useLock,
         fontName: fontName,
         useCloudSync: useCloudSync ?? false,
+        useIcloudSync: useIcloudSync ?? false,
       );
 
   static IsarAppSettings fromDomain(AppSettings settings) {
@@ -23,6 +27,7 @@ class IsarAppSettings {
       ..id = 1
       ..useLock = settings.useLock
       ..fontName = settings.fontName
-      ..useCloudSync = settings.useCloudSync;
+      ..useCloudSync = settings.useCloudSync
+      ..useIcloudSync = settings.useIcloudSync;
   }
 }

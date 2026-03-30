@@ -17,6 +17,9 @@ class IsarDiaryRepository implements DiaryRepository {
   Future<String?> syncKeyIfExists(int localId) => _local.getSyncKeyIfExists(localId);
 
   @override
+  Future<String> getOrAssignSyncKey(int localId) => _local.getOrAssignSyncKey(localId);
+
+  @override
   Future<DiaryEntry> create({
     required String text,
     required DateTime date,
@@ -41,6 +44,23 @@ class IsarDiaryRepository implements DiaryRepository {
   }) {
     return _local.update(
       id,
+      text: text,
+      date: date,
+      defaultImage: defaultImage,
+      imagePath: imagePath,
+    );
+  }
+
+  @override
+  Future<DiaryEntry> upsertFromIcloud({
+    required int id,
+    required String text,
+    required DateTime date,
+    required int defaultImage,
+    String? imagePath,
+  }) {
+    return _local.upsertFromIcloud(
+      id: id,
       text: text,
       date: date,
       defaultImage: defaultImage,

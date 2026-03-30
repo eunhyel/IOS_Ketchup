@@ -4,6 +4,7 @@ abstract class DiaryRepository {
   Future<List<DiaryEntry>> fetchAll();
   Future<DiaryEntry?> getById(int id);
   Future<String?> syncKeyIfExists(int localId);
+  Future<String> getOrAssignSyncKey(int localId);
   Future<DiaryEntry> create({
     required String text,
     required DateTime date,
@@ -12,6 +13,13 @@ abstract class DiaryRepository {
   });
   Future<DiaryEntry> update(
     int id, {
+    required String text,
+    required DateTime date,
+    required int defaultImage,
+    String? imagePath,
+  });
+  Future<DiaryEntry> upsertFromIcloud({
+    required int id,
     required String text,
     required DateTime date,
     required int defaultImage,

@@ -17,12 +17,21 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
-// isar_flutter_libs 3.1.0+1 에 namespace 미지정 → AGP 8+ 빌드 실패 대응
+// isar_flutter_libs 는 compileSdkVersion 30 고정 → androidx 리소스의 android:attr/lStar 링크 실패.
+// Groovy apply plugin 이라 plugins.withId 타이밍으로는 안 올라가므로 afterEvaluate 로 덮어씀.
 subprojects {
-    plugins.withId("com.android.library") {
-        extensions.configure<LibraryExtension>("android") {
-            if (project.name == "isar_flutter_libs" && namespace == null) {
-                namespace = "dev.isar.isar_flutter_libs"
+    afterEvaluate {
+        val androidLib = project.extensions.findByType(LibraryExtension::class.java) ?: return@afterEvaluate
+        val cur = androidLib.compileSdk
+        if (cur != null && cur < 34) {
+            androidLib.compileSdk = 34
+        } else if (cur == null) {
+            androidLib.compileSdk = 34
+        }
+        if (project.name == "isar_flutter_libs") {
+            val ns = androidLib.namespace
+            if (ns.isNullOrEmpty()) {
+                androidLib.namespace = "dev.isar.isar_flutter_libs"
             }
         }
     }

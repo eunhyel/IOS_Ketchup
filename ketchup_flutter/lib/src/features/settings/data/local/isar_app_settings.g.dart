@@ -27,8 +27,13 @@ const IsarAppSettingsSchema = CollectionSchema(
       name: r'useCloudSync',
       type: IsarType.bool,
     ),
-    r'useLock': PropertySchema(
+    r'useIcloudSync': PropertySchema(
       id: 2,
+      name: r'useIcloudSync',
+      type: IsarType.bool,
+    ),
+    r'useLock': PropertySchema(
+      id: 3,
       name: r'useLock',
       type: IsarType.bool,
     )
@@ -65,7 +70,8 @@ void _isarAppSettingsSerialize(
 ) {
   writer.writeString(offsets[0], object.fontName);
   writer.writeBool(offsets[1], object.useCloudSync);
-  writer.writeBool(offsets[2], object.useLock);
+  writer.writeBool(offsets[2], object.useIcloudSync);
+  writer.writeBool(offsets[3], object.useLock);
 }
 
 IsarAppSettings _isarAppSettingsDeserialize(
@@ -78,7 +84,8 @@ IsarAppSettings _isarAppSettingsDeserialize(
   object.fontName = reader.readString(offsets[0]);
   object.id = id;
   object.useCloudSync = reader.readBoolOrNull(offsets[1]);
-  object.useLock = reader.readBool(offsets[2]);
+  object.useIcloudSync = reader.readBoolOrNull(offsets[2]);
+  object.useLock = reader.readBool(offsets[3]);
   return object;
 }
 
@@ -94,6 +101,8 @@ P _isarAppSettingsDeserializeProp<P>(
     case 1:
       return (reader.readBoolOrNull(offset)) as P;
     case 2:
+      return (reader.readBoolOrNull(offset)) as P;
+    case 3:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -416,6 +425,34 @@ extension IsarAppSettingsQueryFilter
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
+      useIcloudSyncIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'useIcloudSync',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
+      useIcloudSyncIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'useIcloudSync',
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
+      useIcloudSyncEqualTo(bool? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'useIcloudSync',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
       useLockEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -459,6 +496,20 @@ extension IsarAppSettingsQuerySortBy
       sortByUseCloudSyncDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useCloudSync', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+      sortByUseIcloudSync() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useIcloudSync', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+      sortByUseIcloudSyncDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useIcloudSync', Sort.desc);
     });
   }
 
@@ -518,6 +569,20 @@ extension IsarAppSettingsQuerySortThenBy
     });
   }
 
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+      thenByUseIcloudSync() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useIcloudSync', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+      thenByUseIcloudSyncDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useIcloudSync', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy> thenByUseLock() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useLock', Sort.asc);
@@ -549,6 +614,13 @@ extension IsarAppSettingsQueryWhereDistinct
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct>
+      distinctByUseIcloudSync() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'useIcloudSync');
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct>
       distinctByUseLock() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'useLock');
@@ -574,6 +646,13 @@ extension IsarAppSettingsQueryProperty
       useCloudSyncProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'useCloudSync');
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, bool?, QQueryOperations>
+      useIcloudSyncProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'useIcloudSync');
     });
   }
 

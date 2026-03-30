@@ -103,6 +103,41 @@ class DiaryLocalDataSource {
     return found.toDomain();
   }
 
+  Future<DiaryEntry> upsertFromIcloud({
+    required int id,
+    required String text,
+    required DateTime date,
+    required int defaultImage,
+    String? imagePath,
+  }) async {
+    final DateTime now = DateTime.now();
+    final IsarDiaryEntry? existing = await _isar.isarDiaryEntrys.get(id);
+    final IsarDiaryEntry record = existing ?? (IsarDiaryEntry()..id = id);
+    record
+      ..text = text
+      ..date = date
+      ..defaultImage = defaultImage
+      ..updatedAt = now;
+    if (imagePath != null) {
+      record.imagePath = DiaryImagePaths.toStored(imagePath);
+    }
+    if (existing == null) {
+      record.createdAt = now;
+    }
+
+    await _isar.writeTxn(() async {
+      await _isar.isarDiaryEntrys.put(record);
+      final IsarDiarySyncMeta? existingMeta = await _isar.isarDiarySyncMetas.get(id);
+      if (existingMeta == null) {
+        final IsarDiarySyncMeta meta = IsarDiarySyncMeta()
+          ..id = id
+          ..syncKey = 'icloud-$id';
+        await _isar.isarDiarySyncMetas.put(meta);
+      }
+    });
+    return record.toDomain();
+  }
+
   Future<void> delete(int id) async {
     await _isar.writeTxn(() async {
       await _isar.isarDiaryEntrys.delete(id);
@@ -169,6 +204,15 @@ class DiaryLocalDataSource {
       await _isar.isarDiaryEntrys.delete(localId);
       await _isar.isarDiarySyncMetas.delete(localId);
     });
+  }
+
+  Future<int> clearAllLocalAndMeta() async {
+    final int count = await _isar.isarDiaryEntrys.count();
+    await _isar.writeTxn(() async {
+      await _isar.isarDiaryEntrys.clear();
+      await _isar.isarDiarySyncMetas.clear();
+    });
+    return count;
   }
 
   /// 이미지 파일이 있으면 동기화 가능한 크기일 때만 base64.

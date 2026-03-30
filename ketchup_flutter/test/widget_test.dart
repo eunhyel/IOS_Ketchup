@@ -90,7 +90,32 @@ class _FakeDiaryRepository implements DiaryRepository {
   Future<String?> syncKeyIfExists(int localId) async => null;
 
   @override
+  Future<String> getOrAssignSyncKey(int localId) async => 'fake-$localId';
+
+  @override
   Future<List<DiaryEntry>> fetchAll() async => _items;
+
+  @override
+  Future<DiaryEntry> upsertFromIcloud({
+    required int id,
+    required String text,
+    required DateTime date,
+    required int defaultImage,
+    String? imagePath,
+  }) async {
+    final DiaryEntry e = DiaryEntry(
+      id: id,
+      text: text,
+      date: date,
+      defaultImage: defaultImage,
+      imagePath: imagePath,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    _items.removeWhere((DiaryEntry x) => x.id == id);
+    _items.add(e);
+    return e;
+  }
 
   @override
   Future<void> seedIfEmpty() async {}
@@ -117,7 +142,12 @@ class _FakeDiaryRepository implements DiaryRepository {
 }
 
 class _FakeSettingsRepository implements SettingsRepository {
-  AppSettings _settings = const AppSettings(useLock: false, fontName: 'system', useCloudSync: false);
+  AppSettings _settings = const AppSettings(
+    useLock: false,
+    fontName: 'system',
+    useCloudSync: false,
+    useIcloudSync: false,
+  );
 
   @override
   Future<AppSettings> load() async => _settings;
@@ -137,6 +167,12 @@ class _FakeSettingsRepository implements SettingsRepository {
   @override
   Future<AppSettings> setUseCloudSync(bool enabled) async {
     _settings = _settings.copyWith(useCloudSync: enabled);
+    return _settings;
+  }
+
+  @override
+  Future<AppSettings> setUseIcloudSync(bool enabled) async {
+    _settings = _settings.copyWith(useIcloudSync: enabled);
     return _settings;
   }
 }

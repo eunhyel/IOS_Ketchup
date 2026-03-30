@@ -13,19 +13,22 @@ class LegacyBackupImport {
   LegacyBackupImport._();
 
   static Future<void> importV1JsonIntoIsar(Isar isar, String jsonText) async {
-    final Map<String, dynamic> root = json.decode(jsonText) as Map<String, dynamic>;
+    final Map<String, dynamic> root =
+        json.decode(jsonText) as Map<String, dynamic>;
     final int? ver = root['schemaVersion'] as int?;
     if (ver != 1) {
       throw FormatException('지원하지 않는 v1 스키마 버전: $ver');
     }
-    final List<dynamic> rawEntries = root['entries'] as List<dynamic>? ?? <dynamic>[];
+    final List<dynamic> rawEntries =
+        root['entries'] as List<dynamic>? ?? <dynamic>[];
 
     await isar.writeTxn(() async {
       await isar.isarDiaryEntrys.clear();
       await isar.isarAppSettings.clear();
       for (final dynamic item in rawEntries) {
         final Map<String, dynamic> e = item as Map<String, dynamic>;
-        final DateTime date = DateTime.tryParse(e['date'] as String? ?? '') ?? DateTime.now();
+        final DateTime date =
+            DateTime.tryParse(e['date'] as String? ?? '') ?? DateTime.now();
         final DateTime createdAt =
             DateTime.tryParse(e['createdAt'] as String? ?? '') ?? date;
         final DateTime updatedAt =
@@ -47,14 +50,17 @@ class LegacyBackupImport {
         IsarAppSettings()
           ..id = 1
           ..useLock = false
-          ..fontName = 'system',
+          ..useCloudSync = false
+          ..useIcloudSync = false
+          ..fontName = 'font_syong',
       );
     });
   }
 
   static bool looksLikeV1(String jsonText) {
     try {
-      final Map<String, dynamic> root = json.decode(jsonText) as Map<String, dynamic>;
+      final Map<String, dynamic> root =
+          json.decode(jsonText) as Map<String, dynamic>;
       return root['schemaVersion'] == 1 && root['entries'] is List;
     } catch (_) {
       return false;
@@ -78,7 +84,8 @@ class LegacyBackupImport {
       for (final Map<String, dynamic> e in rawEntries) {
         final int id = (e['id'] as num?)?.toInt() ?? 0;
         final String text = e['text'] as String? ?? '';
-        final int defaultImage = ((e['defaultImage'] as num?)?.toInt() ?? 0).clamp(0, 2);
+        final int defaultImage = ((e['defaultImage'] as num?)?.toInt() ?? 0)
+            .clamp(0, 2);
         final int? dateMs = (e['dateMs'] as num?)?.toInt();
         final DateTime date = dateMs == null
             ? DateTime.now()
@@ -116,7 +123,9 @@ class LegacyBackupImport {
         IsarAppSettings()
           ..id = 1
           ..useLock = false
-          ..fontName = 'system',
+          ..useCloudSync = false
+          ..useIcloudSync = false
+          ..fontName = 'font_syong',
       );
     });
   }

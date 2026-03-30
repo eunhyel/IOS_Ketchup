@@ -63,8 +63,10 @@ class DiaryImagePaths {
     if (root != null) {
       if (!p.isAbsolute(s)) {
         candidates.add(p.join(root, s));
-        candidates.add(p.join(root, 'ketchup_images', p.basename(s)));
       }
+      // 구 백업/타 기기 복원 시 절대경로(/var/.../ketchup_images/xxx.jpg)가 남아 있을 수 있어
+      // 파일명 기준으로 현재 앱 Documents/ketchup_images에서도 항상 한 번 더 찾습니다.
+      candidates.add(p.join(root, 'ketchup_images', p.basename(s)));
     }
 
     for (final String cand in candidates) {

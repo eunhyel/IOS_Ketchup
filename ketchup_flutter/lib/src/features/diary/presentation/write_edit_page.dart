@@ -20,9 +20,7 @@ import 'package:path_provider/path_provider.dart';
 enum WriteEditMode { view, create, edit }
 
 class WriteEditArgs {
-  const WriteEditArgs.create()
-      : mode = WriteEditMode.create,
-        entry = null;
+  const WriteEditArgs.create() : mode = WriteEditMode.create, entry = null;
   const WriteEditArgs.view({required this.entry}) : mode = WriteEditMode.view;
   const WriteEditArgs.edit({required this.entry}) : mode = WriteEditMode.edit;
 
@@ -41,13 +39,16 @@ class WriteEditPage extends ConsumerStatefulWidget {
   ConsumerState<WriteEditPage> createState() => _WriteEditPageState();
 }
 
-class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindingObserver {
+class _WriteEditPageState extends ConsumerState<WriteEditPage>
+    with WidgetsBindingObserver {
   static const String _iosPlaceholder = '내용을 입력하세요';
   static const Color _textActive = Color(0xFF303030);
   static const Color _textHint = Color(0xFF868686);
+
   /// WriteView.xib `8pf-FS-Voz` 배경과 동일 (1, 0.9686, 0.7961)
   static const Color _photoEmptyBg = Color(0xFFFFF7CB);
   static const Color _divider = Color(0xFFD0D0D0);
+
   /// 캘린더 다이얼로그 테두리 (인스타 계열 핑크)
   static const Color _calendarPinkBorder = Color(0xFFE4405F);
 
@@ -63,12 +64,13 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
   late int _initialDefaultImage;
   String? _imagePath;
   String? _initialImagePath;
-  bool _iosPlaceholderActive = false;
   bool _imageDirty = false;
+
   /// 오른쪽으로 쓸어 닫기(iOS 뒤로 제스처) — 느린 스와이프도 인식
   double _horizontalDismissDx = 0;
-  /// 줄바꿈(\n)으로 줄 수가 늘 때만 스크롤 보정
-  late int _writeLineCount;
+
+  final GlobalKey _writeTextFieldKey = GlobalKey();
+  bool _ensureWriteFieldVisibleScheduled = false;
   Timer? _draftSaveTimer;
 
   String _formatDate(DateTime dt) {
@@ -90,8 +92,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
     _mode = widget.args.mode;
     final DiaryEntry? entry = widget.args.entry;
     if (_mode == WriteEditMode.create) {
-      _textController = TextEditingController(text: _iosPlaceholder);
-      _iosPlaceholderActive = true;
+      _textController = TextEditingController();
       _selectedDate = DateTime.now();
       // iOS 기본 이미지는 고정입니다. (랜덤 제거)
       _defaultImage = 0;
@@ -107,46 +108,77 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
     _imagePath = entry?.imagePath;
     _initialImagePath = entry?.imagePath;
     _textController.addListener(_onTextChanged);
-    _writeLineCount = _countWriteLines(_textController.text);
     if (_mode == WriteEditMode.create) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        unawaited(_tryLoadComposeDraft());
-      });
+      unawaited(_tryLoadComposeDraft());
     }
-  }
-
-  static int _countWriteLines(String t) {
-    if (t.isEmpty) {
-      return 1;
-    }
-    return t.split('\n').length;
   }
 
   void _onTextChanged() {
-    if (_iosPlaceholderActive && _textController.text != _iosPlaceholder) {
-      setState(() {
-        _iosPlaceholderActive = false;
-        _writeLineCount = _countWriteLines(_textController.text);
-      });
+    if (_editable) {
       _schedulePersistComposeDraft();
+      _scheduleEnsureWriteFieldVisible();
+    }
+  }
+
+  /// 텍스트필드가 세로로 늘어날 때(엔터·자동 줄바꿈) 키보드에 가리지 않게 스크롤합니다.
+  void _scheduleEnsureWriteFieldVisible() {
+    if (_ensureWriteFieldVisibleScheduled) {
       return;
     }
-    if (_editable) {
-      final int prev = _writeLineCount;
-      final int n = _countWriteLines(_textController.text);
-      // 줄 수만 바뀔 때는 setState 하지 않음 → 글자 입력 시 패딩/레이아웃 점프 방지
-      _writeLineCount = n;
-      if (n > prev) {
-        final int delta = n - prev;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) {
-            return;
-          }
-          _bumpWriteScrollByLines(context, delta);
-        });
+    _ensureWriteFieldVisibleScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _ensureWriteFieldVisibleScheduled = false;
+      if (!mounted) {
+        return;
       }
-      _schedulePersistComposeDraft();
+      _scrollWriteViewToUncoverTextField();
+    });
+  }
+
+  /// `TextField`는 내부 `Scrollable`이 있어 `Scrollable.ensureVisible`이 바깥 뷰를 스크롤하지
+  /// 못합니다. 바깥 [SingleChildScrollView]만 [delta] 픽셀만큼 올립니다.
+  bool get _hasComposeText => _textController.text.trim().isNotEmpty;
+
+  void _scrollWriteViewToUncoverTextField() {
+    if (!_hasComposeText) {
+      return;
     }
+    if (!_writeScrollController.hasClients) {
+      return;
+    }
+    final BuildContext? fieldContext = _writeTextFieldKey.currentContext;
+    if (fieldContext == null || !fieldContext.mounted) {
+      return;
+    }
+    final RenderObject? ro = fieldContext.findRenderObject();
+    if (ro is! RenderBox || !ro.hasSize) {
+      return;
+    }
+
+    final MediaQueryData mq = MediaQuery.of(fieldContext);
+    final double keyboardH = mq.viewInsets.bottom;
+    if (keyboardH <= 0) {
+      return;
+    }
+
+    const double marginAboveKeyboard = 14;
+    final double limitY = mq.size.height - keyboardH - marginAboveKeyboard;
+    final double fieldBottom = ro.localToGlobal(Offset(0, ro.size.height)).dy;
+    if (fieldBottom <= limitY) {
+      return;
+    }
+
+    final double delta = fieldBottom - limitY;
+    final ScrollPosition pos = _writeScrollController.position;
+    final double target = (pos.pixels + delta).clamp(0.0, pos.maxScrollExtent);
+    if ((target - pos.pixels).abs() < 0.5) {
+      return;
+    }
+    _writeScrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   void _schedulePersistComposeDraft() {
@@ -164,7 +196,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
           date: _selectedDate,
           defaultImage: _defaultImage,
           imagePath: _imagePath,
-          iosPlaceholderActive: _iosPlaceholderActive,
+          iosPlaceholderActive: _textController.text.trim().isEmpty,
         ),
       );
     });
@@ -178,40 +210,26 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
     if (snap == null || !mounted) {
       return;
     }
+    if (_textController.text.isNotEmpty) {
+      return;
+    }
+    String text = snap.text;
+    if (snap.iosPlaceholderActive || text == _iosPlaceholder) {
+      text = '';
+    }
     // 텍스트를 마지막에 넣어야 함: `text`를 먼저 바꾸면 리스너가 동기 실행되며
     // 그 시점 `_imagePath`가 아직 null이면 디바운스 저장이 이미지 없는 초안으로 덮어씁니다.
     setState(() {
-      _iosPlaceholderActive = snap.iosPlaceholderActive;
       _selectedDate = snap.date;
       _defaultImage = snap.defaultImage;
       _imagePath = snap.imagePath;
       _imageDirty = snap.imagePath != null;
-      _textController.text = snap.text;
-      _writeLineCount = _countWriteLines(_textController.text);
+      _textController.text = text;
       _initialText = _textController.text;
       _initialDate = _selectedDate;
       _initialDefaultImage = _defaultImage;
       _initialImagePath = _imagePath;
     });
-  }
-
-  /// 줄바꿈(\n)마다 스크롤을 한 줄 분량만큼 올려 흰 카드·입력이 키보드에 가리지 않게 함.
-  void _bumpWriteScrollByLines(BuildContext context, int deltaLines) {
-    if (deltaLines <= 0) {
-      return;
-    }
-    if (!_writeScrollController.hasClients) {
-      return;
-    }
-    final double oneLine = MediaQuery.textScalerOf(context).scale(24);
-    final double step = oneLine * deltaLines;
-    final ScrollPosition pos = _writeScrollController.position;
-    final double next = (pos.pixels + step).clamp(0.0, pos.maxScrollExtent);
-    _writeScrollController.animateTo(
-      next,
-      duration: Duration(milliseconds: (220 + 40 * deltaLines).clamp(220, 420)),
-      curve: Curves.easeOutCubic,
-    );
   }
 
   @override
@@ -225,8 +243,17 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
   }
 
   @override
+  void didChangeMetrics() {
+    if (mounted && _editable && _hasComposeText) {
+      _scheduleEnsureWriteFieldVisible();
+    }
+    super.didChangeMetrics();
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
       if (_mode == WriteEditMode.create) {
         unawaited(_flushComposeDraftNow());
       }
@@ -242,17 +269,15 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
       date: _selectedDate,
       defaultImage: _defaultImage,
       imagePath: _imagePath,
-      iosPlaceholderActive: _iosPlaceholderActive,
+      iosPlaceholderActive: _textController.text.trim().isEmpty,
     );
   }
 
-  bool get _editable => _mode == WriteEditMode.create || _mode == WriteEditMode.edit;
+  bool get _editable =>
+      _mode == WriteEditMode.create || _mode == WriteEditMode.edit;
   bool get _isView => _mode == WriteEditMode.view;
 
   String _textForSave() {
-    if (_mode == WriteEditMode.create && _iosPlaceholderActive) {
-      return '';
-    }
     return _textController.text.trim();
   }
 
@@ -275,9 +300,11 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
     final double cardW = (screenW - 50).clamp(260.0, 400.0);
     final double photoSize = (cardW - 40).clamp(200.0, 285.0);
     final double keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
-    // 줄 수에 따른 동적 하단 패딩 제거 — 엔터 시에만 스크롤 보정(_bumpWriteScrollByLines)
-    final double keyboardExtraPad =
-        (keyboardInset > 0 && _editable) ? 120.0 : 0.0;
+    // 키보드가 올라온 뒤에도 패턴이 보이도록 인셋만 반영. 추가 스크롤 여유 없으면 maxScrollExtent가
+    // 짧아 커서가 키보드에 가려진 채로 남을 수 있음.
+    final double keyboardExtraPad = (keyboardInset > 0 && _editable)
+        ? 200.0 + keyboardInset * 0.45
+        : 0.0;
 
     return PopScope(
       canPop: false,
@@ -311,74 +338,79 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
           }
         },
         child: Scaffold(
-        backgroundColor: Colors.transparent,
-        // true면 키보드와 사이에 테마 배경(검정/회색)이 보이는 경우가 있어,
-        // 패턴 배경이 키보드 뒤까지 이어지도록 리사이즈 끔 + 스크롤 패딩으로 대응
-        resizeToAvoidBottomInset: false,
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage(KetchupIosAssets.bgPattern),
-              repeat: ImageRepeat.repeat,
-              fit: BoxFit.none,
-              alignment: Alignment.topLeft,
+          backgroundColor: Colors.transparent,
+          // true면 키보드와 사이에 테마 배경(검정/회색)이 보이는 경우가 있어,
+          // 패턴 배경이 키보드 뒤까지 이어지도록 리사이즈 끔 + 스크롤 패딩으로 대응
+          resizeToAvoidBottomInset: false,
+          body: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage(KetchupIosAssets.bgPattern),
+                repeat: ImageRepeat.repeat,
+                fit: BoxFit.none,
+                alignment: Alignment.topLeft,
+              ),
             ),
-          ),
-          child: SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
-                  child: Row(
-                    children: <Widget>[
-                      _roundImageButton(KetchupIosAssets.btnHdPrev, () => _onClosePressed(context)),
-                      const Spacer(),
-                      _roundImageButton(
-                        _isView ? KetchupIosAssets.writeBtnHdInsta : KetchupIosAssets.btnHdWrite,
-                        () => _isView ? _onInstaPressed() : _save(),
-                      ),
-                    ],
+            child: SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+                    child: Row(
+                      children: <Widget>[
+                        _roundImageButton(
+                          KetchupIosAssets.btnHdPrev,
+                          () => _onClosePressed(context),
+                        ),
+                        const Spacer(),
+                        _roundImageButton(
+                          _isView
+                              ? KetchupIosAssets.writeBtnHdInsta
+                              : KetchupIosAssets.btnHdWrite,
+                          () => _isView ? _onInstaPressed() : _save(),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onTap: () => FocusScope.of(context).unfocus(),
-                    child: SingleChildScrollView(
-                      controller: _writeScrollController,
-                      padding: EdgeInsets.fromLTRB(
-                        25,
-                        20,
-                        25,
-                        24 + keyboardInset + keyboardExtraPad,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: <Widget>[
-                          RepaintBoundary(
-                            key: _cardCaptureKey,
-                            child: _whiteCard(context, cardW, photoSize),
-                          ),
-                          if (_editable) ...<Widget>[
-                            const SizedBox(height: 0),
-                            _dateRow(context, cardW, photoSize),
+                  Expanded(
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.translucent,
+                      onTap: () => FocusScope.of(context).unfocus(),
+                      child: SingleChildScrollView(
+                        controller: _writeScrollController,
+                        padding: EdgeInsets.fromLTRB(
+                          25,
+                          20,
+                          25,
+                          24 + keyboardInset + keyboardExtraPad,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: <Widget>[
+                            RepaintBoundary(
+                              key: _cardCaptureKey,
+                              child: _whiteCard(context, cardW, photoSize),
+                            ),
+                            if (_editable) ...<Widget>[
+                              const SizedBox(height: 0),
+                              _dateRow(context, cardW, photoSize),
+                            ],
+                            if (_isView) ...<Widget>[
+                              const SizedBox(height: 20),
+                              _viewBottomActions(context),
+                            ],
                           ],
-                          if (_isView) ...<Widget>[
-                            const SizedBox(height: 20),
-                            _viewBottomActions(context),
-                          ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -428,12 +460,17 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
                     if (_editable)
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,
-                        // 업로드는 유지하되 클릭(잉크) 액션은 제거
-                        onTap: _imagePath == null ? _pickImage : null,
+                        // 편집/쓰기에서는 이미 사진이 있어도 다시 눌러 교체할 수 있어야 합니다.
+                        onTap: _pickImage,
                         child: _imagePath == null
                             ? Center(
                                 child: Padding(
-                                  padding: const EdgeInsets.fromLTRB(48, 48, 48, 40),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    48,
+                                    48,
+                                    48,
+                                    40,
+                                  ),
                                   child: Image.asset(
                                     KetchupIosAssets.writeImgUpload,
                                     fit: BoxFit.contain,
@@ -456,37 +493,56 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
             ),
           ),
           const SizedBox(height: 24),
-          TextField(
-            controller: _textController,
-            enabled: _editable,
-            minLines: 1,
-            maxLines: 6,
-            keyboardType: TextInputType.multiline,
-            inputFormatters: const <TextInputFormatter>[_MaxLinesInputFormatter(6)],
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: ketchupContentWeight(context),
-              color: _editable && _iosPlaceholderActive ? _textHint : _textActive,
-            ),
-            // Theme의 primary(red) 영향을 받지 않도록 기본 텍스트 컬러로 고정합니다.
-            cursorColor: _textActive,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              disabledBorder: InputBorder.none,
-              errorBorder: InputBorder.none,
-              focusedErrorBorder: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-            ),
-            onTap: () {
-              if (_mode == WriteEditMode.create && _iosPlaceholderActive) {
-                _textController.clear();
-                setState(() => _iosPlaceholderActive = false);
+          Focus(
+            onFocusChange: (bool focused) {
+              if (focused && _textController.text.trim().isNotEmpty) {
+                _scheduleEnsureWriteFieldVisible();
+                Future<void>.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted && _editable) {
+                    _scrollWriteViewToUncoverTextField();
+                  }
+                });
               }
             },
+            child: TextField(
+              key: _writeTextFieldKey,
+              controller: _textController,
+              enabled: _editable,
+              minLines: 1,
+              maxLines: 6,
+              keyboardType: TextInputType.multiline,
+              // 큰 scrollPadding은 빈 필드 포커스 시에도 위로 당겨져서, 보정은 _scrollWriteViewToUncoverTextField만 사용
+              scrollPadding: const EdgeInsets.all(20),
+              inputFormatters: const <TextInputFormatter>[
+                _MaxLinesInputFormatter(6),
+              ],
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: ketchupContentWeight(context),
+                color: _textActive,
+              ),
+              // Theme의 primary(red) 영향을 받지 않도록 기본 텍스트 컬러로 고정합니다.
+              cursorColor: _textActive,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+                hintText: _mode == WriteEditMode.create
+                    ? _iosPlaceholder
+                    : null,
+                hintStyle: TextStyle(
+                  fontSize: 18,
+                  fontWeight: ketchupContentWeight(context),
+                  color: _textHint,
+                ),
+              ),
+            ),
           ),
           if (_editable) ...<Widget>[
             const SizedBox(height: 12),
@@ -507,7 +563,12 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
     if (_imagePath != null) {
       final File f = File(_imagePath!);
       if (f.existsSync()) {
-        return Image.file(f, fit: BoxFit.cover, width: photoSize, height: photoSize);
+        return Image.file(
+          f,
+          fit: BoxFit.cover,
+          width: photoSize,
+          height: photoSize,
+        );
       }
     }
     return Image.asset(
@@ -544,11 +605,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
               FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  '날짜',
-                  maxLines: 1,
-                  style: labelStyle,
-                ),
+                child: Text('날짜', maxLines: 1, style: labelStyle),
               ),
               Expanded(
                 child: Align(
@@ -603,7 +660,11 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
             onPressed: _confirmDelete,
             child: Text(
               '삭제하기',
-              style: TextStyle(fontSize: 22, fontWeight: ketchupContentWeight(context), color: Colors.black),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: ketchupContentWeight(context),
+                color: Colors.black,
+              ),
             ),
           ),
           const SizedBox(width: 15),
@@ -612,7 +673,6 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
               setState(() {
                 _mode = WriteEditMode.edit;
                 _textController.text = widget.args.entry?.text ?? '';
-                _iosPlaceholderActive = false;
                 _initialText = _textController.text;
                 _initialDate = _selectedDate;
                 _initialDefaultImage = _defaultImage;
@@ -622,7 +682,11 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
             },
             child: Text(
               '수정하기',
-              style: TextStyle(fontSize: 22, fontWeight: ketchupContentWeight(context), color: Colors.black),
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: ketchupContentWeight(context),
+                color: Colors.black,
+              ),
             ),
           ),
         ],
@@ -693,16 +757,18 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
       }
       final BuildContext? capCtx = _cardCaptureKey.currentContext;
       final RenderObject? ro = capCtx?.findRenderObject();
-      final RenderRepaintBoundary? boundary =
-          ro is RenderRepaintBoundary ? ro : null;
+      final RenderRepaintBoundary? boundary = ro is RenderRepaintBoundary
+          ? ro
+          : null;
       if (boundary == null) {
         _snack('화면을 캡처할 수 없습니다.');
         return;
       }
       final double dpr = MediaQuery.devicePixelRatioOf(context).clamp(2.0, 3.0);
       final ui.Image image = await boundary.toImage(pixelRatio: dpr);
-      final ByteData? bytes =
-          await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? bytes = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       image.dispose();
       if (bytes == null) {
         _snack('이미지를 만들 수 없습니다.');
@@ -740,9 +806,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
           child: SizedBox(
             width: w,
             height: w,
-            child: InteractiveViewer(
-              child: Center(child: _buildPhotoFill(w)),
-            ),
+            child: InteractiveViewer(child: Center(child: _buildPhotoFill(w))),
           ),
         );
       },
@@ -773,7 +837,9 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
         surfaceTintColor: Colors.transparent,
         headerForegroundColor: Colors.black87,
         headerBackgroundColor: white,
-        dayForegroundColor: WidgetStateProperty.resolveWith((Set<WidgetState> s) {
+        dayForegroundColor: WidgetStateProperty.resolveWith((
+          Set<WidgetState> s,
+        ) {
           if (s.contains(WidgetState.disabled)) {
             return Colors.black38;
           }
@@ -782,25 +848,33 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
           }
           return Colors.black87;
         }),
-        todayForegroundColor: WidgetStateProperty.resolveWith((Set<WidgetState> s) {
+        todayForegroundColor: WidgetStateProperty.resolveWith((
+          Set<WidgetState> s,
+        ) {
           if (s.contains(WidgetState.selected)) {
             return const Color(0xFF303030);
           }
           return Colors.black87;
         }),
-        todayBackgroundColor: WidgetStateProperty.resolveWith((Set<WidgetState> s) {
+        todayBackgroundColor: WidgetStateProperty.resolveWith((
+          Set<WidgetState> s,
+        ) {
           if (s.contains(WidgetState.selected)) {
             return Colors.white;
           }
           return Colors.black12;
         }),
-        dayBackgroundColor: WidgetStateProperty.resolveWith((Set<WidgetState> s) {
+        dayBackgroundColor: WidgetStateProperty.resolveWith((
+          Set<WidgetState> s,
+        ) {
           if (s.contains(WidgetState.selected)) {
             return Colors.white;
           }
           return Colors.transparent;
         }),
-        dayShape: WidgetStateProperty.resolveWith<OutlinedBorder?>((Set<WidgetState> s) {
+        dayShape: WidgetStateProperty.resolveWith<OutlinedBorder?>((
+          Set<WidgetState> s,
+        ) {
           if (s.contains(WidgetState.selected)) {
             return const CircleBorder(
               side: BorderSide(color: _calendarPinkBorder, width: 2),
@@ -809,7 +883,9 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
           return const CircleBorder();
         }),
         dayOverlayColor: WidgetStateProperty.all(Colors.black12),
-        yearForegroundColor: WidgetStateProperty.resolveWith((Set<WidgetState> s) {
+        yearForegroundColor: WidgetStateProperty.resolveWith((
+          Set<WidgetState> s,
+        ) {
           if (s.contains(WidgetState.selected)) {
             return const Color(0xFF303030);
           }
@@ -818,14 +894,20 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
           }
           return Colors.black87;
         }),
-        yearBackgroundColor: WidgetStateProperty.resolveWith((Set<WidgetState> s) {
+        yearBackgroundColor: WidgetStateProperty.resolveWith((
+          Set<WidgetState> s,
+        ) {
           if (s.contains(WidgetState.selected)) {
             return Colors.white;
           }
           return Colors.transparent;
         }),
-        cancelButtonStyle: TextButton.styleFrom(foregroundColor: Colors.black87),
-        confirmButtonStyle: TextButton.styleFrom(foregroundColor: const Color(0xFF303030)),
+        cancelButtonStyle: TextButton.styleFrom(
+          foregroundColor: Colors.black87,
+        ),
+        confirmButtonStyle: TextButton.styleFrom(
+          foregroundColor: const Color(0xFF303030),
+        ),
       ),
     );
   }
@@ -860,10 +942,10 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
   }
 
   Future<void> _pickImage() async {
+    // imageQuality / maxWidth 를 쓰면 네이티브가 JPEG로 재압축해 GIF 애니메이션·투명 PNG 가 깨짐.
+    // 용량이 큰 사진은 사용자가 편집 앱에서 줄인 뒤 선택하거나, 동기화 시 _maxImageBytesForSync 한도만 적용됨.
     final XFile? picked = await ImagePicker().pickImage(
       source: ImageSource.gallery,
-      imageQuality: 70,
-      maxWidth: 1024,
     );
     if (picked == null) {
       return;
@@ -873,8 +955,13 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
     if (!await imgDir.exists()) {
       await imgDir.create(recursive: true);
     }
-    final String ext = p.extension(picked.path).isEmpty ? '.jpg' : p.extension(picked.path);
-    final String dest = p.join(imgDir.path, 'img_${DateTime.now().millisecondsSinceEpoch}$ext');
+    final String ext = p.extension(picked.path).isEmpty
+        ? '.jpg'
+        : p.extension(picked.path);
+    final String dest = p.join(
+      imgDir.path,
+      'img_${DateTime.now().millisecondsSinceEpoch}$ext',
+    );
     // iOS 갤러리 임시 경로는 앱 재시작 후 사라질 수 있어 바이트로 문서 폴더에 저장
     final List<int> bytes = await picked.readAsBytes();
     await File(dest).writeAsBytes(bytes);
@@ -904,16 +991,20 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
       if (id == null) {
         return;
       }
-      await ref.read(diaryEntriesProvider.notifier).update(
-            id,
-            text: t,
-            date: _selectedDate,
-            defaultImage: _defaultImage,
-            imagePath: _imagePath,
-          );
       if (mounted) {
         Navigator.of(context).pop(_calendarDayForPop());
       }
+      unawaited(
+        ref
+            .read(diaryEntriesProvider.notifier)
+            .update(
+              id,
+              text: t,
+              date: _selectedDate,
+              defaultImage: _defaultImage,
+              imagePath: _imagePath,
+            ),
+      );
       return;
     }
 
@@ -925,16 +1016,20 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
       }
       // 기본 이미지는 항상 고정입니다.
       final int def = _defaultImage;
-      await ref.read(diaryEntriesProvider.notifier).create(
-            text: text,
-            date: _selectedDate,
-            defaultImage: def,
-            imagePath: _imagePath,
-          );
-      await WriteDraftStorage.clear();
       if (mounted) {
         Navigator.of(context).pop(_calendarDayForPop());
       }
+      unawaited(
+        ref
+            .read(diaryEntriesProvider.notifier)
+            .create(
+              text: text,
+              date: _selectedDate,
+              defaultImage: def,
+              imagePath: _imagePath,
+            ),
+      );
+      unawaited(WriteDraftStorage.clear());
     }
   }
 
@@ -958,10 +1053,11 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage> with WidgetsBindi
     if (id == null) {
       return;
     }
-    await ref.read(diaryEntriesProvider.notifier).delete(id);
     if (mounted) {
       Navigator.of(context).pop();
     }
+    // 네트워크 상태(예: Firestore 오프라인)와 무관하게 상세 화면은 즉시 닫습니다.
+    unawaited(ref.read(diaryEntriesProvider.notifier).delete(id));
   }
 
   Future<bool> _confirmCloseIfDirty() async {
@@ -995,7 +1091,10 @@ class _MaxLinesInputFormatter extends TextInputFormatter {
   final int maxLines;
 
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (newValue.text.split('\n').length > maxLines) {
       return oldValue;
     }

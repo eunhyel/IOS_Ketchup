@@ -16,39 +16,66 @@ class AppSettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
   final SettingsRepository _repository;
 
   Future<void> load() async {
-    state = await AsyncValue.guard(_repository.load);
+    final AsyncValue<AppSettings> next = await AsyncValue.guard(_repository.load);
+    if (!mounted) {
+      return;
+    }
+    state = next;
   }
 
   Future<void> setUseLock(bool enabled) async {
     final AppSettings? previous = state.valueOrNull;
-    if (previous != null) {
+    if (previous != null && mounted) {
       state = AsyncValue.data(previous.copyWith(useLock: enabled));
     }
     final AsyncValue<AppSettings> result = await AsyncValue.guard(
       () => _repository.setUseLock(enabled),
     );
+    if (!mounted) {
+      return;
+    }
     state = result;
   }
 
   Future<void> setFontName(String fontName) async {
     final AppSettings? previous = state.valueOrNull;
-    if (previous != null) {
+    if (previous != null && mounted) {
       state = AsyncValue.data(previous.copyWith(fontName: fontName));
     }
     final AsyncValue<AppSettings> result = await AsyncValue.guard(
       () => _repository.setFontName(fontName),
     );
+    if (!mounted) {
+      return;
+    }
     state = result;
   }
 
   Future<void> setUseCloudSync(bool enabled) async {
     final AppSettings? previous = state.valueOrNull;
-    if (previous != null) {
+    if (previous != null && mounted) {
       state = AsyncValue.data(previous.copyWith(useCloudSync: enabled));
     }
     final AsyncValue<AppSettings> result = await AsyncValue.guard(
       () => _repository.setUseCloudSync(enabled),
     );
+    if (!mounted) {
+      return;
+    }
+    state = result;
+  }
+
+  Future<void> setUseIcloudSync(bool enabled) async {
+    final AppSettings? previous = state.valueOrNull;
+    if (previous != null && mounted) {
+      state = AsyncValue.data(previous.copyWith(useIcloudSync: enabled));
+    }
+    final AsyncValue<AppSettings> result = await AsyncValue.guard(
+      () => _repository.setUseIcloudSync(enabled),
+    );
+    if (!mounted) {
+      return;
+    }
     state = result;
   }
 }

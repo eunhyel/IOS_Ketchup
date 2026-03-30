@@ -1,8 +1,5 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:ketchup_flutter/src/features/backup/presentation/backup_page.dart';
-import 'package:ketchup_flutter/src/features/backup/presentation/backup_providers.dart';
 import 'package:ketchup_flutter/src/features/settings/domain/app_settings.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart';
 
@@ -23,27 +20,11 @@ class SettingsPage extends ConsumerWidget {
         data: (AppSettings settings) => ListView(
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 20),
           children: <Widget>[
-            _MenuTile(
-              title: '클라우드 동기화',
-              subtitle: 'Firestore · Google 로그인 후 사용 (Android 권장)',
-              trailing: Switch(
-                value: settings.useCloudSync,
-                onChanged: (bool value) async {
-                  if (value) {
-                    final User? user = ref.read(firebaseUserProvider).valueOrNull;
-                    if (user == null) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('백업 화면에서 Google 로그인 후 다시 켜 주세요.')),
-                        );
-                        await Navigator.of(context).pushNamed(BackupPage.routeName);
-                      }
-                      return;
-                    }
-                  }
-                  await ref.read(appSettingsProvider.notifier).setUseCloudSync(value);
-                },
-              ),
+            const _MenuTile(
+              title: 'Firestore 동기화',
+              subtitle:
+                  '백업 화면에서 Google 로그인만 하면 일기가 Firestore에 자동 동기화됩니다. '
+                  '별도 ON 토글은 없습니다. iOS에서 iCloud(CloudKit)는 백업 화면의 동기화 토글을 사용하세요.',
             ),
             _MenuTile(
               title: '암호 설정',
@@ -76,7 +57,7 @@ class SettingsPage extends ConsumerWidget {
             const _MenuTile(title: '백업 및 동기화', chevron: true),
             const _MenuTile(title: '개발자 한마디', chevron: true),
             const _MenuTile(title: '케찹의 역사', chevron: true),
-            const _MenuTile(title: '현재 버전', subtitle: '1.0.0'),
+            const _MenuTile(title: '현재 버전', subtitle: '1.1.4'),
           ],
         ),
       ),

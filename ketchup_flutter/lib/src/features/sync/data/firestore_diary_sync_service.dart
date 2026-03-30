@@ -77,6 +77,25 @@ class FirestoreDiarySyncService {
       },
     );
 
+    // 재설치 직후 등 로컬 Isar가 비어 있을 때, 첫 스냅샷에서 docChanges가 비거나
+    // 캐시 메타데이터만 오는 경우가 있어 원격 전체를 한 번 확실히 적용합니다.
+    if (!await _diaryLocal.hasAny()) {
+      try {
+        final QuerySnapshot<Map<String, dynamic>> full = await col.get();
+        _applyingRemote = true;
+        try {
+          for (final QueryDocumentSnapshot<Map<String, dynamic>> d in full.docs) {
+            await _applyRemoteDoc(d);
+          }
+        } finally {
+          _applyingRemote = false;
+        }
+        _scheduleRefresh();
+      } catch (e, st) {
+        debugPrint('[sync] 초기 원격 전체 로드 실패: $e $st');
+      }
+    }
+
     await pushAllLocal();
   }
 

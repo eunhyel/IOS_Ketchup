@@ -81,7 +81,8 @@ class _BootstrapAppState extends State<_BootstrapApp> {
         isarControllerProvider.overrideWith((Ref ref) => IsarController(isar)),
       ],
       child: LockGate(
-        child: _firebaseOk ? const SyncHost(child: KetchupApp()) : const KetchupApp(),
+        // iCloud-only 동기화는 Firebase 초기화와 무관하게 동작해야 하므로 SyncHost는 항상 유지합니다.
+        child: const SyncHost(child: KetchupApp()),
       ),
     );
   }

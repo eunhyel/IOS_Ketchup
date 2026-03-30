@@ -32,7 +32,9 @@ class _DiaryListPageState extends ConsumerState<DiaryListPage> {
   }
 
   void _syncController(List<DateTime> months) {
-    final String sig = months.map((DateTime m) => '${m.year}-${m.month}').join('|');
+    final String sig = months
+        .map((DateTime m) => '${m.year}-${m.month}')
+        .join('|');
     if (sig == _monthsSignature && _pageController != null) {
       return;
     }
@@ -76,15 +78,37 @@ class _DiaryListPageState extends ConsumerState<DiaryListPage> {
       return;
     }
     final DateTime targetMonth = DateTime(result.year, result.month);
+    // pop 직후 비동기 create/load 가 한 프레임 늦게 끝날 수 있어, 달 목록이 생길 때까지 짧게 재시도
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
-      _jumpToMonth(targetMonth);
+      _jumpToMonthWhenReady(targetMonth);
     });
   }
 
-  void _jumpToMonth(DateTime month) {
+  static const int _jumpReadyMaxAttempts = 24;
+
+  void _jumpToMonthWhenReady(DateTime month, {int attempt = 0}) {
+    if (!mounted || attempt >= _jumpReadyMaxAttempts) {
+      return;
+    }
+    final List<DateTime> months = ref.read(diaryMonthsAscendingProvider);
+    final bool hasMonth = months.any(
+      (DateTime m) => m.year == month.year && m.month == month.month,
+    );
+    if (hasMonth) {
+      _jumpToMonth(month, animate: false);
+      return;
+    }
+    Future<void>.delayed(const Duration(milliseconds: 16), () {
+      if (mounted) {
+        _jumpToMonthWhenReady(month, attempt: attempt + 1);
+      }
+    });
+  }
+
+  void _jumpToMonth(DateTime month, {bool animate = true}) {
     final List<DateTime> months = ref.read(diaryMonthsAscendingProvider);
     final int idx = months.indexWhere(
       (DateTime m) => m.year == month.year && m.month == month.month,
@@ -97,48 +121,58 @@ class _DiaryListPageState extends ConsumerState<DiaryListPage> {
     if (_pageController == null) {
       return;
     }
-    void runAnimate() {
+    void runScroll() {
       if (!mounted || _pageController == null || !_pageController!.hasClients) {
         return;
       }
-      _pageController!.animateToPage(
-        idx,
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-      );
+      if (animate) {
+        _pageController!.animateToPage(
+          idx,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _pageController!.jumpToPage(idx);
+      }
     }
 
     if (_pageController!.hasClients) {
-      runAnimate();
+      runScroll();
     } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) => runAnimate());
+      WidgetsBinding.instance.addPostFrameCallback((_) => runScroll());
     }
   }
 
-  static String _defaultImageAsset(int defaultImage) => KetchupIosAssets.imgDefault(defaultImage);
+  static String _defaultImageAsset(int defaultImage) =>
+      KetchupIosAssets.imgDefault(defaultImage);
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<List<DiaryEntry>> entriesAsync = ref.watch(diaryEntriesProvider);
+    final AsyncValue<List<DiaryEntry>> entriesAsync = ref.watch(
+      diaryEntriesProvider,
+    );
     final List<DateTime> months = ref.watch(diaryMonthsAscendingProvider);
 
     return entriesAsync.when(
       loading: () => _scaffold(
         context,
         months,
-        const Center(child: CircularProgressIndicator(color: Color(0xFF5C5C5C))),
+        const Center(
+          child: CircularProgressIndicator(color: Color(0xFF5C5C5C)),
+        ),
       ),
-      error: (Object e, StackTrace st) => _scaffold(
-        context,
-        months,
-        Center(child: Text('데이터 로드 실패: $e')),
-      ),
+      error: (Object e, StackTrace st) =>
+          _scaffold(context, months, Center(child: Text('데이터 로드 실패: $e'))),
       data: (List<DiaryEntry> allEntries) {
         _syncController(months);
         if (_pageController != null && months.isNotEmpty) {
           _pageIndex = _pageIndex.clamp(0, months.length - 1);
         }
-        return _scaffold(context, months, _buildMainBody(context, allEntries, months));
+        return _scaffold(
+          context,
+          months,
+          _buildMainBody(context, allEntries, months),
+        );
       },
     );
   }
@@ -179,11 +213,18 @@ class _DiaryListPageState extends ConsumerState<DiaryListPage> {
                   _handleWritePopResult(r);
                 },
                 monthCount: months.length,
-                pageIndex: months.isEmpty ? 0 : _pageIndex.clamp(0, months.length - 1),
+                pageIndex: months.isEmpty
+                    ? 0
+                    : _pageIndex.clamp(0, months.length - 1),
                 onPrevMonth: () => _goPage(-1, months.length),
                 onNextMonth: () => _goPage(1, months.length),
               ),
-              Expanded(child: body),
+              Expanded(
+                child: Transform.translate(
+                  offset: const Offset(0, 10),
+                  child: body,
+                ),
+              ),
             ],
           ),
         ),
@@ -191,7 +232,11 @@ class _DiaryListPageState extends ConsumerState<DiaryListPage> {
     );
   }
 
-  Widget _buildMainBody(BuildContext context, List<DiaryEntry> allEntries, List<DateTime> months) {
+  Widget _buildMainBody(
+    BuildContext context,
+    List<DiaryEntry> allEntries,
+    List<DateTime> months,
+  ) {
     if (months.isEmpty || _pageController == null) {
       // iOS Main.storyboard `defult_label`: centerY 전체 뷰 대비 약 -80pt
       return Stack(
@@ -219,7 +264,10 @@ class _DiaryListPageState extends ConsumerState<DiaryListPage> {
       onPageChanged: (int i) => _onPageChanged(i, months),
       itemCount: months.length,
       itemBuilder: (BuildContext context, int index) {
-        final List<DiaryEntry> monthEntries = entriesInMonth(allEntries, months[index]);
+        final List<DiaryEntry> monthEntries = entriesInMonth(
+          allEntries,
+          months[index],
+        );
         return GridView.builder(
           padding: const EdgeInsets.fromLTRB(15, 0, 15, 24),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -279,72 +327,88 @@ class _IosHeader extends StatelessWidget {
     final bool canPrev = hasPages && pageIndex > 0;
     final bool canNext = hasPages && pageIndex < monthCount - 1;
 
-    final String prevAsset = canPrev ? KetchupIosAssets.btnHdPrev : KetchupIosAssets.btnPagePrevDisa;
-    final String nextAsset = canNext ? KetchupIosAssets.btnPageNext : KetchupIosAssets.btnPageNextDisa;
+    final String prevAsset = canPrev
+        ? KetchupIosAssets.btnHdPrev
+        : KetchupIosAssets.btnPagePrevDisa;
+    final String nextAsset = canNext
+        ? KetchupIosAssets.btnPageNext
+        : KetchupIosAssets.btnPageNextDisa;
 
-    return SizedBox(
-      height: 169,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 0),
-        child: Column(
-          children: <Widget>[
-            const SizedBox(height: 4),
-            SizedBox(
-              height: 52,
-              child: Row(
-                children: <Widget>[
-                  const SizedBox(width: 10),
-                  _SquareImageButton(asset: KetchupIosAssets.btnHdMore, onTap: onSettings),
-                  const SizedBox(width: 10),
-                  Image.asset(
-                    KetchupIosAssets.imgLogo,
-                    height: 36.5,
-                    fit: BoxFit.contain,
-                  ),
-                  const Spacer(),
-                  _SquareImageButton(asset: KetchupIosAssets.btnHdWrite, onTap: onWrite),
-                  const SizedBox(width: 10),
-                ],
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 52,
+            child: Row(
               children: <Widget>[
-                const SizedBox(width: 30),
-                _MonthNavDot(asset: prevAsset, enabled: canPrev, onTap: canPrev ? onPrevMonth : null),
-                Expanded(
-                  child: Column(
-                    children: <Widget>[
-                      Text(
-                        '$year',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: ketchupContentWeight(context),
-                          color: Colors.black,
-                          height: 1.1,
-                        ),
-                      ),
-                      Text(
-                        '$month월',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 22.5,
-                          fontWeight: ketchupContentWeight(context),
-                          color: Colors.black,
-                          height: 1.15,
-                        ),
-                      ),
-                    ],
-                  ),
+                const SizedBox(width: 10),
+                _SquareImageButton(
+                  asset: KetchupIosAssets.btnHdMore,
+                  onTap: onSettings,
                 ),
-                _MonthNavDot(asset: nextAsset, enabled: canNext, onTap: canNext ? onNextMonth : null),
-                const SizedBox(width: 37),
+                const SizedBox(width: 10),
+                Image.asset(
+                  KetchupIosAssets.imgLogo,
+                  height: 36.5,
+                  fit: BoxFit.contain,
+                ),
+                const Spacer(),
+                _SquareImageButton(
+                  asset: KetchupIosAssets.btnHdWrite,
+                  onTap: onWrite,
+                ),
+                const SizedBox(width: 10),
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const SizedBox(width: 30),
+              _MonthNavDot(
+                asset: prevAsset,
+                enabled: canPrev,
+                onTap: canPrev ? onPrevMonth : null,
+              ),
+              Expanded(
+                child: Column(
+                  children: <Widget>[
+                    Text(
+                      '$year',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: ketchupContentWeight(context),
+                        color: Colors.black,
+                        height: 1.1,
+                      ),
+                    ),
+                    Text(
+                      '$month월',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 22.5,
+                        fontWeight: ketchupContentWeight(context),
+                        color: Colors.black,
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _MonthNavDot(
+                asset: nextAsset,
+                enabled: canNext,
+                onTap: canNext ? onNextMonth : null,
+              ),
+              const SizedBox(width: 37),
+            ],
+          ),
+        ],
       ),
     );
   }

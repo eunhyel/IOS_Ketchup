@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:ketchup_flutter/src/core/ads/ketchup_banner_ad_slot.dart';
 import 'package:ketchup_flutter/src/core/assets/ketchup_ios_assets.dart';
 import 'package:ketchup_flutter/src/core/theme/ketchup_typography_extension.dart';
 import 'package:ketchup_flutter/src/features/diary/domain/diary_entry.dart';
@@ -225,6 +226,7 @@ class _DiaryListPageState extends ConsumerState<DiaryListPage> {
                   child: body,
                 ),
               ),
+              const KetchupBannerAdSlot(),
             ],
           ),
         ),

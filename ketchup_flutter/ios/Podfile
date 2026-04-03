@@ -1,8 +1,13 @@
-# Uncomment this line to define a global platform for your project
-# platform :ios, '13.0'
+# CDN(cocoapods.org) HTTP/2 framing 오류 회피 — Specs Git 사용(최초 clone은 시간이 걸릴 수 있음)
+source 'https://github.com/CocoaPods/Specs.git'
+
+# google_mobile_ads 등 바이너리 다운로드 시 curl HTTP/2 오류 회피 — 이 디렉터리의 .curlrc 사용
+ENV['CURL_HOME'] = __dir__
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+platform :ios, '16.0'
 
 project 'Ketchup', {
   'Debug' => :debug,
@@ -40,5 +45,10 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
+    target.build_configurations.each do |config|
+      if config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 12.0
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
+      end
+    end
   end
 end

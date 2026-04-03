@@ -101,7 +101,7 @@ class IosOneTalkPage extends StatelessWidget {
                       8 * scale,
                     ),
                     child: Text(
-                      '부자되게 해주세요!!\n제발요!!',
+                      '내가 쓸려고 만든 앱!\nSimple is the best',
                       style: TextStyle(
                         fontSize: 16 * scale,
                         color: _textColor,
@@ -174,11 +174,11 @@ class IosOneTalkPage extends StatelessWidget {
                 left: 110,
                 top: 384.5,
               ),
-              // 세 번째 말풍선 — 좌우 여백만 두고 넓혀 마지막 줄이 내려가지 않게
+              // 세 번째 말풍선 — 위쪽 말풍선과 동일 폭으로 정렬
               Positioned(
                 left: 118 * scale,
                 top: 359.5 * scale,
-                right: 14 * scale,
+                width: 227.5 * scale,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: Colors.white,

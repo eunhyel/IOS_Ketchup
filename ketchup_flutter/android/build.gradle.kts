@@ -23,10 +23,10 @@ subprojects {
     afterEvaluate {
         val androidLib = project.extensions.findByType(LibraryExtension::class.java) ?: return@afterEvaluate
         val cur = androidLib.compileSdk
-        if (cur != null && cur < 34) {
-            androidLib.compileSdk = 34
+        if (cur != null && cur < 36) {
+            androidLib.compileSdk = 36
         } else if (cur == null) {
-            androidLib.compileSdk = 34
+            androidLib.compileSdk = 36
         }
         if (project.name == "isar_flutter_libs") {
             val ns = androidLib.namespace

@@ -38,6 +38,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
   bool _remoteResetRunning = false;
   int _remoteResetBatch = 0;
   int _remoteResetDeleted = 0;
+  bool _icloudPushing = false;
+  int _icloudPushDone = 0;
+  int _icloudPushTotal = 0;
 
   @override
   void initState() {
@@ -113,14 +116,31 @@ class _BackupPageState extends ConsumerState<BackupPage> {
               ColoredBox(
                 color: const Color(0x66000000),
                 child: Center(
-                  child: SizedBox(
-                    width: 140,
-                    height: 140,
-                    child: Lottie.asset(
-                      '${KetchupIosAssets.root}/ani_catchop_loader.json',
-                      repeat: true,
-                      fit: BoxFit.contain,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      SizedBox(
+                        width: 140,
+                        height: 140,
+                        child: Lottie.asset(
+                          '${KetchupIosAssets.root}/ani_catchop_loader.json',
+                          repeat: true,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      if (_icloudPushing && _icloudPushTotal > 0)
+                        Padding(
+                          padding: EdgeInsets.only(top: 10 * scale),
+                          child: Text(
+                            '$_icloudPushDone/$_icloudPushTotal',
+                            style: TextStyle(
+                              fontSize: 16 * scale,
+                              color: const Color(0xFFEAEAEA),
+                              fontWeight: ketchupContentWeight(context),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -240,9 +260,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
           left: 36 * scale,
           top: 350 * scale,
           width: 294 * scale,
-          height: 2.5 * scale,
+          height: 1.0,
           child: Container(
-            color: const Color(0xFFD0BFAE),
+            color: Colors.black.withValues(alpha: 0.7),
           ),
         ),
         // 백업/복원 버튼 (iOS: img-btn-bg)
@@ -270,29 +290,39 @@ class _BackupPageState extends ConsumerState<BackupPage> {
         ),
         // iCloud 동기화는 iOS에서만 노출
         if (Platform.isIOS) ...<Widget>[
+          // 아이콘 중심 187.5 * scale — 라벨은 81pt보다 넓어 한 줄로 두기 위해 블록만 넓힙니다.
           Positioned(
-            left: 147 * scale,
+            left: 77.5 * scale,
             top: 391.5 * scale,
-            width: 81 * scale,
-            height: 83 * scale,
-            child: Opacity(
-              opacity: icloudSync ? 1 : 0.45,
-              child: Image.asset(
-                KetchupIosAssets.backupIcloud,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 165 * scale,
-            top: 488.5 * scale,
-            child: Text(
-              '동기화',
-              style: TextStyle(
-                fontSize: 17 * scale,
-                color: const Color(0xFF303030),
-                fontWeight: ketchupContentWeight(context),
-              ),
+            width: 220 * scale,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: <Widget>[
+                SizedBox(
+                  height: 83 * scale,
+                  width: 81 * scale,
+                  child: Opacity(
+                    opacity: icloudSync ? 1 : 0.45,
+                    child: Image.asset(
+                      KetchupIosAssets.backupIcloud,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                SizedBox(height: (488.5 - 391.5 - 83) * scale),
+                Text(
+                  'icloud 동기화',
+                  maxLines: 1,
+                  softWrap: false,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 17 * scale,
+                    color: const Color(0xFF303030),
+                    fontWeight: ketchupContentWeight(context),
+                  ),
+                ),
+              ],
             ),
           ),
           Positioned(
@@ -413,7 +443,35 @@ class _BackupPageState extends ConsumerState<BackupPage> {
               }
             }
           } else {
-            await ref.read(diaryEntriesProvider.notifier).icloudPushAllLocal();
+            // iCloud 동기화(로컬 -> CloudKit 저장) 진행상황 표시
+            int lastUiUpdateDone = -999;
+            setState(() {
+              _icloudPushing = true;
+              _icloudPushDone = 0;
+              _icloudPushTotal = 0;
+            });
+            await ref.read(diaryEntriesProvider.notifier).icloudPushAllLocal(
+                  onProgress: (int current, int total) {
+                    if (!mounted) {
+                      return;
+                    }
+                    if (total <= 0) {
+                      return;
+                    }
+                    // 1건마다 rebuild 하면 부담될 수 있어 5개 단위/마지막에만 갱신합니다.
+                    final bool shouldUpdate = current == 0 ||
+                        current == total ||
+                        (current - lastUiUpdateDone) >= 5;
+                    if (!shouldUpdate) {
+                      return;
+                    }
+                    lastUiUpdateDone = current;
+                    setState(() {
+                      _icloudPushDone = current;
+                      _icloudPushTotal = total;
+                    });
+                  },
+                );
             if (mounted) {
               _toast('로컬 일기를 iCloud(CloudKit)에 올렸습니다.');
             }
@@ -434,7 +492,12 @@ class _BackupPageState extends ConsumerState<BackupPage> {
         }
       } finally {
         if (mounted) {
-          setState(() => _busy = false);
+          setState(() {
+            _busy = false;
+            _icloudPushing = false;
+            _icloudPushDone = 0;
+            _icloudPushTotal = 0;
+          });
         }
       }
     } else {

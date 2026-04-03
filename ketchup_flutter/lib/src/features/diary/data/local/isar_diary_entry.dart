@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:ketchup_flutter/src/features/diary/data/local/diary_image_paths.dart';
 import 'package:ketchup_flutter/src/features/diary/domain/diary_entry.dart';
 

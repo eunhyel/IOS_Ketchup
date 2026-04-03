@@ -105,7 +105,7 @@ class KetchupPasswordDots extends StatelessWidget {
   }
 }
 
-/// XIB 키패드: 행 높이 92.5, 숫자 이미지 66, 가로 간격 15, 세로 간격 10, 삭제 `img-pw-dlt` 53.5×40.
+/// XIB 키패드: 행 높이 92.5, 숫자 이미지 66, 가로 간격 15, 세로 간격 10, 삭제 `img-pw-dlt` 40×30.
 class KetchupPasswordKeypad extends StatelessWidget {
   const KetchupPasswordKeypad({
     super.key,
@@ -126,9 +126,9 @@ class KetchupPasswordKeypad extends StatelessWidget {
     final double keyImg = 66 * scale;
     final double rowH = 92.5 * scale;
     final double cellW = (rowW - 2 * hGap) / 3;
-    // XIB 리소스 `img-pw-dlt` — width 53.5pt, height 40pt (@1x 기준, 375 레이아웃과 동일 비율)
-    final double deleteW = 53.5 * scale;
-    final double deleteH = 40 * scale;
+    // XIB 리소스 `img-pw-dlt` — width 40pt, height 30pt (@1x 기준, 375 레이아웃과 동일 비율)
+    final double deleteW = 40 * scale;
+    final double deleteH = 30 * scale;
 
     Widget digitKey(int d) {
       return _KeyCell(

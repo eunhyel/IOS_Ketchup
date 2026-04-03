@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:crypto/crypto.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:ketchup_flutter/src/core/platform/legacy_realm_bridge.dart';
 import 'package:ketchup_flutter/src/core/storage/isar_controller.dart';
 import 'package:ketchup_flutter/src/features/backup/data/backup_manifest.dart';

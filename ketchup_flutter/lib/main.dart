@@ -3,7 +3,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:isar_community/isar.dart';
 import 'package:ketchup_flutter/src/app.dart';
 import 'package:ketchup_flutter/src/core/assets/ketchup_ios_assets.dart';
 import 'package:ketchup_flutter/src/core/lock/lock_gate.dart';
@@ -39,6 +40,11 @@ class _BootstrapAppState extends State<_BootstrapApp> {
   }
 
   Future<void> _init() async {
+    try {
+      await MobileAds.instance.initialize();
+    } catch (e, st) {
+      debugPrint('MobileAds.initialize 실패: $e $st');
+    }
     try {
       await AppDocuments.init();
       bool firebaseOk = false;

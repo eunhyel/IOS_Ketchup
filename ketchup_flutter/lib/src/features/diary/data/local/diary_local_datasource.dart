@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:ketchup_flutter/src/features/diary/data/local/diary_image_paths.dart';
 import 'package:ketchup_flutter/src/features/diary/data/local/isar_diary_entry.dart';
 import 'package:ketchup_flutter/src/features/diary/data/local/isar_diary_sync_meta.dart';

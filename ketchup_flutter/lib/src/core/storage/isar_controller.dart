@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:ketchup_flutter/src/core/storage/app_isar.dart';
 import 'package:ketchup_flutter/src/features/diary/data/local/isar_diary_entry.dart';
 import 'package:path/path.dart' as p;

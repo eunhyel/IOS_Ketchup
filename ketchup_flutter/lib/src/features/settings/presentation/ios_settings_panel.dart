@@ -69,43 +69,52 @@ class _IosSettingsPanelBody extends ConsumerWidget {
             child: MediaQuery.removePadding(
               context: context,
               removeTop: true,
-              child: ListView.separated(
+              child: Padding(
                 padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top + 56),
-                itemCount: _menu.length,
-                separatorBuilder: (BuildContext context, int index) => Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Colors.black.withValues(alpha: 0.13),
-                ),
-                itemBuilder: (BuildContext context, int index) {
-                  String label = _menu[index];
-                  if (index == _menu.length - 1) {
-                    label = '$label  $version';
-                  }
-                  return Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => _onTap(context, ref, index),
-                      child: SizedBox(
-                        height: 60,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Padding(
-                            padding: const EdgeInsets.only(left: 22),
-                            child: Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: ketchupContentWeight(context),
-                                color: const Color(0xFF303030),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: List<Widget>.generate(_menu.length, (int index) {
+                    String label = _menu[index];
+                    if (index == _menu.length - 1) {
+                      label = '$label  $version';
+                    }
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _onTap(context, ref, index),
+                            child: SizedBox(
+                              height: 60,
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 22),
+                                  child: Text(
+                                    label,
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: ketchupContentWeight(context),
+                                      color: const Color(0xFF303030),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                },
+                        if (index != _menu.length - 1)
+                          Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Colors.black.withValues(alpha: 0.13),
+                          ),
+                      ],
+                    );
+                  }),
+                ),
               ),
             ),
           ),

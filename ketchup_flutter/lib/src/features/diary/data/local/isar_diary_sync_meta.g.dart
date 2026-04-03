@@ -17,12 +17,9 @@ const IsarDiarySyncMetaSchema = CollectionSchema(
   name: r'IsarDiarySyncMeta',
   id: 6428783226665826125,
   properties: {
-    r'syncKey': PropertySchema(
-      id: 0,
-      name: r'syncKey',
-      type: IsarType.string,
-    )
+    r'syncKey': PropertySchema(id: 0, name: r'syncKey', type: IsarType.string),
   },
+
   estimateSize: _isarDiarySyncMetaEstimateSize,
   serialize: _isarDiarySyncMetaSerialize,
   deserialize: _isarDiarySyncMetaDeserialize,
@@ -39,16 +36,17 @@ const IsarDiarySyncMetaSchema = CollectionSchema(
           name: r'syncKey',
           type: IndexType.hash,
           caseSensitive: true,
-        )
+        ),
       ],
-    )
+    ),
   },
   links: {},
   embeddedSchemas: {},
+
   getId: _isarDiarySyncMetaGetId,
   getLinks: _isarDiarySyncMetaGetLinks,
   attach: _isarDiarySyncMetaAttach,
-  version: '3.1.0+1',
+  version: '3.3.2',
 );
 
 int _isarDiarySyncMetaEstimateSize(
@@ -101,12 +99,16 @@ Id _isarDiarySyncMetaGetId(IsarDiarySyncMeta object) {
 }
 
 List<IsarLinkBase<dynamic>> _isarDiarySyncMetaGetLinks(
-    IsarDiarySyncMeta object) {
+  IsarDiarySyncMeta object,
+) {
   return [];
 }
 
 void _isarDiarySyncMetaAttach(
-    IsarCollection<dynamic> col, Id id, IsarDiarySyncMeta object) {
+  IsarCollection<dynamic> col,
+  Id id,
+  IsarDiarySyncMeta object,
+) {
   object.id = id;
 }
 
@@ -159,8 +161,10 @@ extension IsarDiarySyncMetaByIndex on IsarCollection<IsarDiarySyncMeta> {
     return putAllByIndex(r'syncKey', objects);
   }
 
-  List<Id> putAllBySyncKeySync(List<IsarDiarySyncMeta> objects,
-      {bool saveLinks = true}) {
+  List<Id> putAllBySyncKeySync(
+    List<IsarDiarySyncMeta> objects, {
+    bool saveLinks = true,
+  }) {
     return putAllByIndexSync(r'syncKey', objects, saveLinks: saveLinks);
   }
 }
@@ -177,17 +181,14 @@ extension IsarDiarySyncMetaQueryWhereSort
 extension IsarDiarySyncMetaQueryWhere
     on QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QWhereClause> {
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterWhereClause>
-      idEqualTo(Id id) {
+  idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: id,
-        upper: id,
-      ));
+      return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterWhereClause>
-      idNotEqualTo(Id id) {
+  idNotEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -210,7 +211,7 @@ extension IsarDiarySyncMetaQueryWhere
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterWhereClause>
-      idGreaterThan(Id id, {bool include = false}) {
+  idGreaterThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.greaterThan(lower: id, includeLower: include),
@@ -219,7 +220,7 @@ extension IsarDiarySyncMetaQueryWhere
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterWhereClause>
-      idLessThan(Id id, {bool include = false}) {
+  idLessThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: id, includeUpper: include),
@@ -228,63 +229,72 @@ extension IsarDiarySyncMetaQueryWhere
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterWhereClause>
-      idBetween(
+  idBetween(
     Id lowerId,
     Id upperId, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: lowerId,
-        includeLower: includeLower,
-        upper: upperId,
-        includeUpper: includeUpper,
-      ));
+      return query.addWhereClause(
+        IdWhereClause.between(
+          lower: lowerId,
+          includeLower: includeLower,
+          upper: upperId,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterWhereClause>
-      syncKeyEqualTo(String syncKey) {
+  syncKeyEqualTo(String syncKey) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'syncKey',
-        value: [syncKey],
-      ));
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(indexName: r'syncKey', value: [syncKey]),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterWhereClause>
-      syncKeyNotEqualTo(String syncKey) {
+  syncKeyNotEqualTo(String syncKey) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'syncKey',
-              lower: [],
-              upper: [syncKey],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'syncKey',
-              lower: [syncKey],
-              includeLower: false,
-              upper: [],
-            ));
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncKey',
+                lower: [],
+                upper: [syncKey],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncKey',
+                lower: [syncKey],
+                includeLower: false,
+                upper: [],
+              ),
+            );
       } else {
         return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'syncKey',
-              lower: [syncKey],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'syncKey',
-              lower: [],
-              upper: [syncKey],
-              includeUpper: false,
-            ));
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncKey',
+                lower: [syncKey],
+                includeLower: false,
+                upper: [],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'syncKey',
+                lower: [],
+                upper: [syncKey],
+                includeUpper: false,
+              ),
+            );
       }
     });
   }
@@ -293,109 +303,111 @@ extension IsarDiarySyncMetaQueryWhere
 extension IsarDiarySyncMetaQueryFilter
     on QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QFilterCondition> {
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      idEqualTo(Id value) {
+  idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'id', value: value),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      idGreaterThan(
-    Id value, {
-    bool include = false,
-  }) {
+  idGreaterThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      idLessThan(
-    Id value, {
-    bool include = false,
-  }) {
+  idLessThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      idBetween(
+  idBetween(
     Id lower,
     Id upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'id',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'id',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      syncKeyEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  syncKeyEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'syncKey',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'syncKey',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      syncKeyGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'syncKey',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      syncKeyLessThan(
+  syncKeyGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'syncKey',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'syncKey',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      syncKeyBetween(
+  syncKeyLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'syncKey',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
+  syncKeyBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -403,84 +415,86 @@ extension IsarDiarySyncMetaQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'syncKey',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'syncKey',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      syncKeyStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  syncKeyStartsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'syncKey',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'syncKey',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      syncKeyEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  syncKeyEndsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'syncKey',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'syncKey',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      syncKeyContains(String value, {bool caseSensitive = true}) {
+  syncKeyContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'syncKey',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'syncKey',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      syncKeyMatches(String pattern, {bool caseSensitive = true}) {
+  syncKeyMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'syncKey',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'syncKey',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      syncKeyIsEmpty() {
+  syncKeyIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'syncKey',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'syncKey', value: ''),
+      );
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterFilterCondition>
-      syncKeyIsNotEmpty() {
+  syncKeyIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'syncKey',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'syncKey', value: ''),
+      );
     });
   }
 }
@@ -494,14 +508,14 @@ extension IsarDiarySyncMetaQueryLinks
 extension IsarDiarySyncMetaQuerySortBy
     on QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QSortBy> {
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterSortBy>
-      sortBySyncKey() {
+  sortBySyncKey() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncKey', Sort.asc);
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterSortBy>
-      sortBySyncKeyDesc() {
+  sortBySyncKeyDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncKey', Sort.desc);
     });
@@ -517,21 +531,21 @@ extension IsarDiarySyncMetaQuerySortThenBy
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterSortBy>
-      thenByIdDesc() {
+  thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterSortBy>
-      thenBySyncKey() {
+  thenBySyncKey() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncKey', Sort.asc);
     });
   }
 
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QAfterSortBy>
-      thenBySyncKeyDesc() {
+  thenBySyncKeyDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncKey', Sort.desc);
     });
@@ -541,7 +555,7 @@ extension IsarDiarySyncMetaQuerySortThenBy
 extension IsarDiarySyncMetaQueryWhereDistinct
     on QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QDistinct> {
   QueryBuilder<IsarDiarySyncMeta, IsarDiarySyncMeta, QDistinct>
-      distinctBySyncKey({bool caseSensitive = true}) {
+  distinctBySyncKey({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'syncKey', caseSensitive: caseSensitive);
     });

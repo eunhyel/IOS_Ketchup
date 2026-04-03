@@ -259,6 +259,12 @@ class SceneDelegate: FlutterSceneDelegate {
       self.ensureFlutterDiaryZone(db: db) {
         self.fetchFlutterDiaryRowsViaZoneChanges(db: db) { flutterRows in
           print("[icloud] FlutterDiary zone rows=\(flutterRows.count)")
+          // 성능: 최신(Flutter 전용 존) 데이터가 이미 있으면 legacy private zone 전체 스캔을 생략합니다.
+          // (legacy 스캔은 flutterRows가 비었을 때만 수행)
+          if !flutterRows.isEmpty {
+            DispatchQueue.main.async { result(flutterRows) }
+            return
+          }
           self.fetchAllZoneIDs(db: db) { zoneIDs in
             let defaultZ = CKRecordZone.default().zoneID
             let flutterZ = self.flutterDiaryZoneID()

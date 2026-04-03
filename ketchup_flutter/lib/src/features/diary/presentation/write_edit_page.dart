@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:ketchup_flutter/src/core/assets/ketchup_ios_assets.dart';
@@ -41,13 +41,12 @@ class WriteEditPage extends ConsumerStatefulWidget {
 
 class _WriteEditPageState extends ConsumerState<WriteEditPage>
     with WidgetsBindingObserver {
+  static const int _maxWriteLines = 10;
   static const String _iosPlaceholder = '내용을 입력하세요';
   static const Color _textActive = Color(0xFF303030);
   static const Color _textHint = Color(0xFF868686);
-
-  /// WriteView.xib `8pf-FS-Voz` 배경과 동일 (1, 0.9686, 0.7961)
-  static const Color _photoEmptyBg = Color(0xFFFFF7CB);
   static const Color _divider = Color(0xFFD0D0D0);
+  static const Color _photoEmptyBg = Color(0xFFFFF7CB);
 
   /// 캘린더 다이얼로그 테두리 (인스타 계열 핑크)
   static const Color _calendarPinkBorder = Color(0xFFE4405F);
@@ -72,6 +71,10 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
   final GlobalKey _writeTextFieldKey = GlobalKey();
   bool _ensureWriteFieldVisibleScheduled = false;
   Timer? _draftSaveTimer;
+  String _lastAcceptedText = '';
+  bool _applyingLineLimitRollback = false;
+  bool _lineLimitDialogOpen = false;
+  double _lastKeyboardInset = 0.0;
 
   String _formatDate(DateTime dt) {
     final String y = dt.year.toString().padLeft(4, '0');
@@ -107,6 +110,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
     _initialDefaultImage = _defaultImage;
     _imagePath = entry?.imagePath;
     _initialImagePath = entry?.imagePath;
+    _lastAcceptedText = _textController.text;
     _textController.addListener(_onTextChanged);
     if (_mode == WriteEditMode.create) {
       unawaited(_tryLoadComposeDraft());
@@ -115,9 +119,58 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
 
   void _onTextChanged() {
     if (_editable) {
+      if (_applyingLineLimitRollback) {
+        return;
+      }
+      final String current = _textController.text;
+      if (_exceedsWriteLineLimit(current)) {
+        _applyingLineLimitRollback = true;
+        _textController.value = TextEditingValue(
+          text: _lastAcceptedText,
+          selection: TextSelection.collapsed(offset: _lastAcceptedText.length),
+        );
+        _applyingLineLimitRollback = false;
+        _showWriteLineLimitDialog();
+        return;
+      }
+      _lastAcceptedText = current;
       _schedulePersistComposeDraft();
       _scheduleEnsureWriteFieldVisible();
     }
+  }
+
+  bool _exceedsWriteLineLimit(String text) {
+    if (text.isEmpty) {
+      return false;
+    }
+    if (text.split('\n').length > _maxWriteLines) {
+      return true;
+    }
+    final BuildContext? fieldContext = _writeTextFieldKey.currentContext;
+    double maxWidth = 0;
+    if (fieldContext != null) {
+      final RenderObject? ro = fieldContext.findRenderObject();
+      if (ro is RenderBox && ro.hasSize) {
+        maxWidth = ro.size.width;
+      }
+    }
+    if (maxWidth <= 0) {
+      final double screenW = MediaQuery.sizeOf(context).width;
+      final double cardW = (screenW - 50).clamp(260.0, 400.0);
+      maxWidth = cardW - 40;
+    }
+    final TextPainter tp = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: ketchupContentWeight(context),
+        ),
+      ),
+      textDirection: Directionality.of(context),
+      maxLines: null,
+    )..layout(maxWidth: maxWidth);
+    return tp.computeLineMetrics().length > _maxWriteLines;
   }
 
   /// 텍스트필드가 세로로 늘어날 때(엔터·자동 줄바꿈) 키보드에 가리지 않게 스크롤합니다.
@@ -226,6 +279,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
       _imageDirty = snap.imagePath != null;
       _textController.text = text;
       _initialText = _textController.text;
+      _lastAcceptedText = _textController.text;
       _initialDate = _selectedDate;
       _initialDefaultImage = _defaultImage;
       _initialImagePath = _imagePath;
@@ -244,7 +298,15 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
 
   @override
   void didChangeMetrics() {
-    if (mounted && _editable && _hasComposeText) {
+    if (!mounted) {
+      super.didChangeMetrics();
+      return;
+    }
+    final double inset = MediaQuery.viewInsetsOf(context).bottom;
+    final bool keyboardIsRising = inset > _lastKeyboardInset;
+    _lastKeyboardInset = inset;
+    // 키보드가 올라올 때만 보정 스크롤을 수행해, 내려갈 때 버벅임을 줄입니다.
+    if (_editable && _hasComposeText && keyboardIsRising && inset > 0) {
       _scheduleEnsureWriteFieldVisible();
     }
     super.didChangeMetrics();
@@ -298,13 +360,14 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
   Widget build(BuildContext context) {
     final double screenW = MediaQuery.sizeOf(context).width;
     final double cardW = (screenW - 50).clamp(260.0, 400.0);
-    final double photoSize = (cardW - 40).clamp(200.0, 285.0);
+    // 카드 내부 패딩(20*2)을 제외한 폭을 그대로 써서 사진 좌우 여백을 상하 inset과 동일하게 맞춥니다.
+    final double photoSize = cardW - 40;
     final double keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
     // 키보드가 올라온 뒤에도 패턴이 보이도록 인셋만 반영. 추가 스크롤 여유 없으면 maxScrollExtent가
     // 짧아 커서가 키보드에 가려진 채로 남을 수 있음.
-    final double keyboardExtraPad = (keyboardInset > 0 && _editable)
-        ? 200.0 + keyboardInset * 0.45
-        : 0.0;
+    // 인셋 비례 패딩은 키보드 닫힘 애니메이션 중 레이아웃 변동이 커져 버벅임이 생길 수 있어
+    // 키보드 표시 시 고정 추가 패딩으로 단순화합니다.
+    final double keyboardExtraPad = (keyboardInset > 0 && _editable) ? 220.0 : 0.0;
 
     return PopScope(
       canPop: false,
@@ -509,13 +572,10 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
               controller: _textController,
               enabled: _editable,
               minLines: 1,
-              maxLines: 6,
+              maxLines: 10,
               keyboardType: TextInputType.multiline,
               // 큰 scrollPadding은 빈 필드 포커스 시에도 위로 당겨져서, 보정은 _scrollWriteViewToUncoverTextField만 사용
               scrollPadding: const EdgeInsets.all(20),
-              inputFormatters: const <TextInputFormatter>[
-                _MaxLinesInputFormatter(6),
-              ],
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 18,
@@ -553,19 +613,22 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
     );
   }
 
-  Widget _buildPhotoFill(double photoSize) {
+  /// [preview] true: 확대 보기 — 전체가 보이도록 contain (카드 썸네일은 cover 유지).
+  Widget _buildPhotoFill(double photoSize, {bool preview = false}) {
     // iOS WriteView.xib: create(쓰기) 화면에서는 기본 이미지가 아닌 빈 이미지뷰 배경 + 업로드 아이콘을 보여줍니다.
     // (기본 이미지/def 이미지들은 저장 시점에 확정됩니다.)
     if (_mode == WriteEditMode.create && _imagePath == null) {
       return SizedBox(width: photoSize, height: photoSize);
     }
 
+    final BoxFit fit = preview ? BoxFit.contain : BoxFit.cover;
+
     if (_imagePath != null) {
       final File f = File(_imagePath!);
       if (f.existsSync()) {
         return Image.file(
           f,
-          fit: BoxFit.cover,
+          fit: fit,
           width: photoSize,
           height: photoSize,
         );
@@ -573,7 +636,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
     }
     return Image.asset(
       KetchupIosAssets.imgDefault(_defaultImage),
-      fit: BoxFit.cover,
+      fit: fit,
       width: photoSize,
       height: photoSize,
     );
@@ -674,6 +737,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
                 _mode = WriteEditMode.edit;
                 _textController.text = widget.args.entry?.text ?? '';
                 _initialText = _textController.text;
+                _lastAcceptedText = _textController.text;
                 _initialDate = _selectedDate;
                 _initialDefaultImage = _defaultImage;
                 _initialImagePath = _imagePath;
@@ -806,7 +870,11 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
           child: SizedBox(
             width: w,
             height: w,
-            child: InteractiveViewer(child: Center(child: _buildPhotoFill(w))),
+            child: InteractiveViewer(
+              child: Center(
+                child: _buildPhotoFill(w, preview: true),
+              ),
+            ),
           ),
         );
       },
@@ -1083,21 +1151,25 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
   void _snack(String m) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
   }
-}
 
-/// 줄 수를 [maxLines] 로 제한 (6줄 이상 입력·붙여넣기 방지).
-class _MaxLinesInputFormatter extends TextInputFormatter {
-  const _MaxLinesInputFormatter(this.maxLines);
-  final int maxLines;
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    if (newValue.text.split('\n').length > maxLines) {
-      return oldValue;
+  void _showWriteLineLimitDialog() {
+    if (_lineLimitDialogOpen || !mounted) {
+      return;
     }
-    return newValue;
+    _lineLimitDialogOpen = true;
+    unawaited(() async {
+      try {
+        await showKetchupIosSingleButtonDialog(
+          context,
+          message: '더 이상 입력할 수 없습니다(최대 $_maxWriteLines줄)',
+          buttonText: '확인',
+        );
+      } finally {
+        if (mounted) {
+          _lineLimitDialogOpen = false;
+        }
+      }
+    }());
   }
 }
+

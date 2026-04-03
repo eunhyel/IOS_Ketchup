@@ -53,6 +53,51 @@ Future<bool?> showKetchupIosConfirmDialog(
   );
 }
 
+/// iOS `CustomAlertView` 스타일로, 버튼을 1개만 표시합니다.
+Future<void> showKetchupIosSingleButtonDialog(
+  BuildContext context, {
+  required String message,
+  String buttonText = '확인',
+}) {
+  final double w = MediaQuery.sizeOf(context).width;
+  final double scale = (w / 375.0).clamp(0.9, 1.2);
+
+  const Color containerBg = Color(0xFFFFEBC6);
+  const double containerW = 280;
+  const double containerH = 183;
+
+  return showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    barrierColor: Colors.black.withValues(alpha: 0.4),
+    transitionDuration: const Duration(milliseconds: 180),
+    pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+      return Center(
+        child: Material(
+          color: Colors.transparent,
+          child: SizedBox(
+            width: containerW * scale,
+            height: containerH * scale,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(40 * scale),
+              child: Container(
+                color: containerBg,
+                child: _IosSingleAlertBody(
+                  scale: scale,
+                  message: message,
+                  buttonText: buttonText,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
 class _IosAlertBody extends StatelessWidget {
   const _IosAlertBody({
     required this.scale,
@@ -137,6 +182,78 @@ class _IosAlertBody extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _IosSingleAlertBody extends StatelessWidget {
+  const _IosSingleAlertBody({
+    required this.scale,
+    required this.message,
+    required this.buttonText,
+    required this.onPressed,
+  });
+
+  final double scale;
+  final String message;
+  final String buttonText;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    const Color messageColor = Color(0xFF1D1D09);
+
+    return Stack(
+      children: <Widget>[
+        // header part (message + title image)
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          height: 110.5 * scale,
+          child: Padding(
+            padding: EdgeInsets.only(top: 10 * scale),
+            child: Column(
+              children: <Widget>[
+                Image.asset(
+                  KetchupIosAssets.popupAlimTit,
+                  width: 90 * scale,
+                  height: 40 * scale,
+                  fit: BoxFit.contain,
+                ),
+                SizedBox(height: 20 * scale),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 27 * scale),
+                  child: Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    maxLines: 10,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: messageColor,
+                      height: 1.25,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 75.5 * scale,
+          child: Center(
+            child: _IosAlertButton(
+              scale: scale,
+              title: buttonText,
+              onTap: onPressed,
+            ),
           ),
         ),
       ],

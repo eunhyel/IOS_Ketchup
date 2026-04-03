@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:ketchup_flutter/src/features/settings/domain/app_settings.dart';
 
 part 'isar_app_settings.g.dart';

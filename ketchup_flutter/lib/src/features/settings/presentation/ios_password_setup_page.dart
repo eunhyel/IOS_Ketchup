@@ -89,9 +89,19 @@ class _IosPasswordSetupPageState extends ConsumerState<IosPasswordSetupPage> {
     if (_input.length >= digitCount) {
       return;
     }
-    setState(() => _input += d.toString());
-    if (_input.length == digitCount) {
-      _onPasswordComplete(_input);
+    final String next = '$_input$d';
+    setState(() => _input = next);
+    if (next.length == digitCount) {
+      // 마지막 입력 점(토마토) 변화가 보이도록 짧게 지연한 뒤 완료 처리.
+      Future<void>.delayed(const Duration(milliseconds: 110), () {
+        if (!mounted) {
+          return;
+        }
+        if (_input != next || _input.length != digitCount) {
+          return;
+        }
+        unawaited(_onPasswordComplete(next));
+      });
     }
   }
 

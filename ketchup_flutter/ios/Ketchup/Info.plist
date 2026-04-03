@@ -35,19 +35,21 @@
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3637465572249358~1472440943</string>
+	<key>FacebookAppID</key>
+	<string>1283315725398493</string>
+	<key>GIDClientID</key>
+	<string>150068919703-frc9svv2ssrbni04kqb4e54b90021m15.apps.googleusercontent.com</string>
+	<key>GIDServerClientID</key>
+	<string>150068919703-l6n8bspvlekht185kf3omcqbeo77r7k8.apps.googleusercontent.com</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>instagram</string>
 		<string>instagram-stories</string>
 	</array>
-	<key>FacebookAppID</key>
-	<string></string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-		<key>GIDClientID</key>
-		<string>150068919703-frc9svv2ssrbni04kqb4e54b90021m15.apps.googleusercontent.com</string>
-		<key>GIDServerClientID</key>
-		<string>150068919703-l6n8bspvlekht185kf3omcqbeo77r7k8.apps.googleusercontent.com</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>일기에 사진을 첨부하려면 사진 라이브러리 접근이 필요합니다.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -82,15 +84,13 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 </dict>
 </plist>

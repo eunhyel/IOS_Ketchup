@@ -1,2 +1,2 @@
-#include? "Pods/Target Support Files/Pods-Ketchup/Pods-Ketchup.release.xcconfig"
+#include? "Pods/Target Support Files/Pods-Ketchup/Pods-Ketchup.release-ketchup.xcconfig"
 #include "Generated.xcconfig"

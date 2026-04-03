@@ -32,12 +32,9 @@ const IsarAppSettingsSchema = CollectionSchema(
       name: r'useIcloudSync',
       type: IsarType.bool,
     ),
-    r'useLock': PropertySchema(
-      id: 3,
-      name: r'useLock',
-      type: IsarType.bool,
-    )
+    r'useLock': PropertySchema(id: 3, name: r'useLock', type: IsarType.bool),
   },
+
   estimateSize: _isarAppSettingsEstimateSize,
   serialize: _isarAppSettingsSerialize,
   deserialize: _isarAppSettingsDeserialize,
@@ -46,10 +43,11 @@ const IsarAppSettingsSchema = CollectionSchema(
   indexes: {},
   links: {},
   embeddedSchemas: {},
+
   getId: _isarAppSettingsGetId,
   getLinks: _isarAppSettingsGetLinks,
   attach: _isarAppSettingsAttach,
-  version: '3.1.0+1',
+  version: '3.3.2',
 );
 
 int _isarAppSettingsEstimateSize(
@@ -118,7 +116,10 @@ List<IsarLinkBase<dynamic>> _isarAppSettingsGetLinks(IsarAppSettings object) {
 }
 
 void _isarAppSettingsAttach(
-    IsarCollection<dynamic> col, Id id, IsarAppSettings object) {
+  IsarCollection<dynamic> col,
+  Id id,
+  IsarAppSettings object,
+) {
   object.id = id;
 }
 
@@ -134,17 +135,15 @@ extension IsarAppSettingsQueryWhereSort
 extension IsarAppSettingsQueryWhere
     on QueryBuilder<IsarAppSettings, IsarAppSettings, QWhereClause> {
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterWhereClause> idEqualTo(
-      Id id) {
+    Id id,
+  ) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: id,
-        upper: id,
-      ));
+      return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterWhereClause>
-      idNotEqualTo(Id id) {
+  idNotEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -167,7 +166,7 @@ extension IsarAppSettingsQueryWhere
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterWhereClause>
-      idGreaterThan(Id id, {bool include = false}) {
+  idGreaterThan(Id id, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.greaterThan(lower: id, includeLower: include),
@@ -176,8 +175,9 @@ extension IsarAppSettingsQueryWhere
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterWhereClause> idLessThan(
-      Id id,
-      {bool include = false}) {
+    Id id, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: id, includeUpper: include),
@@ -192,12 +192,14 @@ extension IsarAppSettingsQueryWhere
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(
-        lower: lowerId,
-        includeLower: includeLower,
-        upper: upperId,
-        includeUpper: includeUpper,
-      ));
+      return query.addWhereClause(
+        IdWhereClause.between(
+          lower: lowerId,
+          includeLower: includeLower,
+          upper: upperId,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 }
@@ -205,53 +207,56 @@ extension IsarAppSettingsQueryWhere
 extension IsarAppSettingsQueryFilter
     on QueryBuilder<IsarAppSettings, IsarAppSettings, QFilterCondition> {
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      fontNameEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  fontNameEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'fontName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'fontName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      fontNameGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'fontName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      fontNameLessThan(
+  fontNameGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'fontName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'fontName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      fontNameBetween(
+  fontNameLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'fontName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
+  fontNameBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -259,206 +264,204 @@ extension IsarAppSettingsQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'fontName',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'fontName',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      fontNameStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  fontNameStartsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'fontName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'fontName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      fontNameEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
+  fontNameEndsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'fontName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'fontName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      fontNameContains(String value, {bool caseSensitive = true}) {
+  fontNameContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'fontName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'fontName',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      fontNameMatches(String pattern, {bool caseSensitive = true}) {
+  fontNameMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'fontName',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'fontName',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      fontNameIsEmpty() {
+  fontNameIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'fontName',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'fontName', value: ''),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      fontNameIsNotEmpty() {
+  fontNameIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'fontName',
-        value: '',
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'fontName', value: ''),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      idEqualTo(Id value) {
+  idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'id', value: value),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      idGreaterThan(
-    Id value, {
-    bool include = false,
-  }) {
+  idGreaterThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      idLessThan(
-    Id value, {
-    bool include = false,
-  }) {
+  idLessThan(Id value, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'id',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'id',
+          value: value,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      idBetween(
+  idBetween(
     Id lower,
     Id upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'id',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'id',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      useCloudSyncIsNull() {
+  useCloudSyncIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'useCloudSync',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'useCloudSync'),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      useCloudSyncIsNotNull() {
+  useCloudSyncIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'useCloudSync',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'useCloudSync'),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      useCloudSyncEqualTo(bool? value) {
+  useCloudSyncEqualTo(bool? value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'useCloudSync',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'useCloudSync', value: value),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      useIcloudSyncIsNull() {
+  useIcloudSyncIsNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'useIcloudSync',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'useIcloudSync'),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      useIcloudSyncIsNotNull() {
+  useIcloudSyncIsNotNull() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'useIcloudSync',
-      ));
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'useIcloudSync'),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      useIcloudSyncEqualTo(bool? value) {
+  useIcloudSyncEqualTo(bool? value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'useIcloudSync',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'useIcloudSync', value: value),
+      );
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
-      useLockEqualTo(bool value) {
+  useLockEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'useLock',
-        value: value,
-      ));
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'useLock', value: value),
+      );
     });
   }
 }
@@ -472,42 +475,42 @@ extension IsarAppSettingsQueryLinks
 extension IsarAppSettingsQuerySortBy
     on QueryBuilder<IsarAppSettings, IsarAppSettings, QSortBy> {
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      sortByFontName() {
+  sortByFontName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fontName', Sort.asc);
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      sortByFontNameDesc() {
+  sortByFontNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fontName', Sort.desc);
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      sortByUseCloudSync() {
+  sortByUseCloudSync() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useCloudSync', Sort.asc);
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      sortByUseCloudSyncDesc() {
+  sortByUseCloudSyncDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useCloudSync', Sort.desc);
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      sortByUseIcloudSync() {
+  sortByUseIcloudSync() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useIcloudSync', Sort.asc);
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      sortByUseIcloudSyncDesc() {
+  sortByUseIcloudSyncDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useIcloudSync', Sort.desc);
     });
@@ -520,7 +523,7 @@ extension IsarAppSettingsQuerySortBy
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      sortByUseLockDesc() {
+  sortByUseLockDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useLock', Sort.desc);
     });
@@ -530,14 +533,14 @@ extension IsarAppSettingsQuerySortBy
 extension IsarAppSettingsQuerySortThenBy
     on QueryBuilder<IsarAppSettings, IsarAppSettings, QSortThenBy> {
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      thenByFontName() {
+  thenByFontName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fontName', Sort.asc);
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      thenByFontNameDesc() {
+  thenByFontNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fontName', Sort.desc);
     });
@@ -556,28 +559,28 @@ extension IsarAppSettingsQuerySortThenBy
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      thenByUseCloudSync() {
+  thenByUseCloudSync() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useCloudSync', Sort.asc);
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      thenByUseCloudSyncDesc() {
+  thenByUseCloudSyncDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useCloudSync', Sort.desc);
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      thenByUseIcloudSync() {
+  thenByUseIcloudSync() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useIcloudSync', Sort.asc);
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      thenByUseIcloudSyncDesc() {
+  thenByUseIcloudSyncDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useIcloudSync', Sort.desc);
     });
@@ -590,7 +593,7 @@ extension IsarAppSettingsQuerySortThenBy
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
-      thenByUseLockDesc() {
+  thenByUseLockDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useLock', Sort.desc);
     });
@@ -599,29 +602,30 @@ extension IsarAppSettingsQuerySortThenBy
 
 extension IsarAppSettingsQueryWhereDistinct
     on QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct> {
-  QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct> distinctByFontName(
-      {bool caseSensitive = true}) {
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct> distinctByFontName({
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'fontName', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct>
-      distinctByUseCloudSync() {
+  distinctByUseCloudSync() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'useCloudSync');
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct>
-      distinctByUseIcloudSync() {
+  distinctByUseIcloudSync() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'useIcloudSync');
     });
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct>
-      distinctByUseLock() {
+  distinctByUseLock() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'useLock');
     });
@@ -643,14 +647,14 @@ extension IsarAppSettingsQueryProperty
   }
 
   QueryBuilder<IsarAppSettings, bool?, QQueryOperations>
-      useCloudSyncProperty() {
+  useCloudSyncProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'useCloudSync');
     });
   }
 
   QueryBuilder<IsarAppSettings, bool?, QQueryOperations>
-      useIcloudSyncProperty() {
+  useIcloudSyncProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'useIcloudSync');
     });

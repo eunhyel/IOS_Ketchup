@@ -1,4 +1,4 @@
-import 'package:isar/isar.dart';
+import 'package:isar_community/isar.dart';
 import 'package:ketchup_flutter/src/core/theme/ketchup_bundled_fonts.dart';
 import 'package:ketchup_flutter/src/features/settings/data/local/isar_app_settings.dart';
 import 'package:ketchup_flutter/src/features/settings/domain/app_settings.dart';

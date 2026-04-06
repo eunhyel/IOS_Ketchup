@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -35,9 +36,6 @@ class BackupPage extends ConsumerStatefulWidget {
 
 class _BackupPageState extends ConsumerState<BackupPage> {
   bool _busy = false;
-  bool _remoteResetRunning = false;
-  int _remoteResetBatch = 0;
-  int _remoteResetDeleted = 0;
   bool _icloudPushing = false;
   int _icloudPushDone = 0;
   int _icloudPushTotal = 0;
@@ -265,31 +263,68 @@ class _BackupPageState extends ConsumerState<BackupPage> {
             color: Colors.black.withValues(alpha: 0.7),
           ),
         ),
-        // 백업/복원 버튼 (iOS: img-btn-bg)
+        // 백업 / 복원 (iOS: img-btn-bg, 기존 85·214pt 간격과 동일하게 가운데 정렬)
         Positioned(
-          left: 85 * scale,
+          left: 0,
+          right: 0,
           top: 260 * scale,
-          width: 60 * scale,
           height: 54 * scale,
-          child: _ImgBtn(
-            title: '백업',
-            enabled: !_busy && user != null,
-            onTap: user == null ? null : _backup,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              SizedBox(
+                width: 60 * scale,
+                height: 54 * scale,
+                child: _ImgBtn(
+                  title: '백업',
+                  enabled: !_busy && user != null,
+                  onTap: user == null ? null : _backup,
+                ),
+              ),
+              SizedBox(width: 69 * scale),
+              SizedBox(
+                width: 60 * scale,
+                height: 54 * scale,
+                child: _ImgBtn(
+                  title: '복원',
+                  enabled: !_busy && user != null,
+                  onTap: user == null ? null : _restore,
+                ),
+              ),
+            ],
           ),
         ),
+        // 복원 열 오른쪽 · 구분선(Bar) 위: 초기화 링크와 동일 스타일
         Positioned(
-          left: 214 * scale,
-          top: 260 * scale,
-          width: 60 * scale,
-          height: 54 * scale,
-          child: _ImgBtn(
-            title: '복원',
-            enabled: !_busy && user != null,
-            onTap: user == null ? null : _restore,
+          right: 16 * scale,
+          top: 318 * scale,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _showBackupDetailsHelp,
+              borderRadius: BorderRadius.circular(4 * scale),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 6 * scale,
+                  vertical: 4 * scale,
+                ),
+                child: Text(
+                  '자세히',
+                  style: TextStyle(
+                    fontSize: 12.5 * scale,
+                    height: 1.2,
+                    color: const Color(0xFF5C5C5C),
+                    decoration: TextDecoration.underline,
+                    decorationColor: const Color(0xFF5C5C5C),
+                    fontWeight: ketchupContentWeight(context),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
-        // iCloud 동기화는 iOS에서만 노출
-        if (Platform.isIOS) ...<Widget>[
+        // iCloud 동기화: 디버그/프로파일에서만 노출 (릴리스 스토어 빌드에서는 숨김)
+        if (Platform.isIOS && !kReleaseMode) ...<Widget>[
           // 아이콘 중심 187.5 * scale — 라벨은 81pt보다 넓어 한 줄로 두기 위해 블록만 넓힙니다.
           Positioned(
             left: 77.5 * scale,
@@ -338,55 +373,39 @@ class _BackupPageState extends ConsumerState<BackupPage> {
               },
             ),
           ),
-          if (_remoteResetRunning)
-            Positioned(
-              left: 0,
-              right: 0,
-              top: 598 * scale,
-              child: Text(
-                '원격 삭제 진행중... 배치 $_remoteResetBatch, 누적 $_remoteResetDeleted건',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14 * scale,
-                  color: const Color(0xFF5C5C5C),
-                  fontWeight: ketchupContentWeight(context),
-                ),
-              ),
-            ),
         ],
-        if (Platform.isIOS)
-          Positioned(
-            right: 16 * scale,
-            bottom: 8 * scale,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: _busy ? null : _resetSyncData,
-                borderRadius: BorderRadius.circular(4 * scale),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 6 * scale,
-                    vertical: 4 * scale,
-                  ),
-                  child: Text(
-                    '초기화',
-                    style: TextStyle(
-                      fontSize: 12.5 * scale,
-                      height: 1.2,
-                      color: _busy
-                          ? const Color(0xFF303030).withValues(alpha: 0.38)
-                          : const Color(0xFF5C5C5C),
-                      decoration: TextDecoration.underline,
-                      decorationColor: _busy
-                          ? const Color(0xFF303030).withValues(alpha: 0.38)
-                          : const Color(0xFF5C5C5C),
-                      fontWeight: ketchupContentWeight(context),
-                    ),
+        Positioned(
+          right: 16 * scale,
+          bottom: 8 * scale,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _busy ? null : _resetSyncData,
+              borderRadius: BorderRadius.circular(4 * scale),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: 6 * scale,
+                  vertical: 4 * scale,
+                ),
+                child: Text(
+                  '초기화',
+                  style: TextStyle(
+                    fontSize: 12.5 * scale,
+                    height: 1.2,
+                    color: _busy
+                        ? const Color(0xFF303030).withValues(alpha: 0.38)
+                        : const Color(0xFF5C5C5C),
+                    decoration: TextDecoration.underline,
+                    decorationColor: _busy
+                        ? const Color(0xFF303030).withValues(alpha: 0.38)
+                        : const Color(0xFF5C5C5C),
+                    fontWeight: ketchupContentWeight(context),
                   ),
                 ),
               ),
             ),
           ),
+        ),
       ],
     );
   }
@@ -522,20 +541,19 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     setState(() => _busy = true);
     try {
       // 원격 네트워크 상태에 영향받지 않도록 로컬은 즉시 정리합니다.
-      final int localDeleted = await ref.read(diaryLocalDataSourceProvider).clearAllLocalAndMeta();
+      await ref.read(diaryLocalDataSourceProvider).clearAllLocalAndMeta();
       await ref.read(appSettingsProvider.notifier).setUseCloudSync(false);
       await ref.read(appSettingsProvider.notifier).setUseIcloudSync(false);
 
-      int icloudDeleted = 0;
       if (Platform.isIOS) {
-        icloudDeleted = await IcloudDaySyncBridge.clearDays().timeout(
+        await IcloudDaySyncBridge.clearDays().timeout(
           const Duration(seconds: 8),
           onTimeout: () => 0,
         );
       }
 
       ref.invalidate(diaryEntriesProvider);
-      _toast('초기화 완료 (로컬 $localDeleted건 / iCloud $icloudDeleted건). 원격 정리는 백그라운드에서 진행합니다.');
+      _toast('초기화 완료');
 
       final User? user = ref.read(firebaseAuthProvider).currentUser;
       if (user != null) {
@@ -551,18 +569,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
   }
 
   Future<void> _clearRemoteDiaryEntriesInBackground(String uid) async {
-    if (mounted) {
-      setState(() {
-        _remoteResetRunning = true;
-        _remoteResetBatch = 0;
-        _remoteResetDeleted = 0;
-      });
-    }
     try {
       final CollectionReference<Map<String, dynamic>> col =
           FirebaseFirestore.instance.collection('users').doc(uid).collection('diary_entries');
-      int deleted = 0;
-      int batchNo = 0;
 
       // Firestore 배치는 500개 제한이 있어 페이지 단위로 지웁니다.
       while (true) {
@@ -576,28 +585,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
           batch.delete(d.reference);
         }
         await batch.commit().timeout(const Duration(seconds: 6));
-        deleted += snap.docs.length;
-        batchNo += 1;
-        if (mounted) {
-          setState(() {
-            _remoteResetBatch = batchNo;
-            _remoteResetDeleted = deleted;
-          });
-        }
       }
-      if (mounted) {
-        _toast('원격 초기화 완료 (클라우드 $deleted건 삭제)');
-      }
-    } catch (e) {
-      if (mounted) {
-        _toast('원격 초기화 지연: 네트워크 연결 후 다시 시도해 주세요.');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _remoteResetRunning = false;
-        });
-      }
+    } catch (_) {
+      // 원격 정리 실패는 조용히 무시 (로컬 초기화는 이미 완료됨)
     }
   }
 
@@ -619,10 +609,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
         onTimeout: () => null,
       );
       if (account == null) {
-        _toast(
-          '로그인이 취소되었거나 응답이 없습니다. '
-          'iOS에서 Google 로그인 후 앱으로 돌아오는지 확인하거나, 잠시 후 다시 시도해 주세요.',
-        );
+        _toast('로그인이 취소되었거나 응답이 없습니다.');
         return;
       }
       final GoogleSignInAuthentication ga = await account.authentication;
@@ -791,6 +778,17 @@ class _BackupPageState extends ConsumerState<BackupPage> {
         setState(() => _busy = false);
       }
     }
+  }
+
+  Future<void> _showBackupDetailsHelp() async {
+    await showKetchupIosSingleButtonDialog(
+      context,
+      message:
+          '백업 파일은 Google Drive에 저장됩니다.\n'
+          'Ketchup 폴더에 Ketchup_backup.zip 파일을\n'
+          '삭제하시면 백업을 할 수 없으니 주의하세요.',
+      buttonText: '확인',
+    );
   }
 
   Future<void> _restore() async {

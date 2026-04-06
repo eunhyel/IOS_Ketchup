@@ -147,10 +147,14 @@ class _FakeSettingsRepository implements SettingsRepository {
     fontName: 'system',
     useCloudSync: false,
     useIcloudSync: false,
+    blockRemoteDiaryRestore: false,
   );
 
   @override
   Future<AppSettings> load() async => _settings;
+
+  @override
+  AppSettings loadSync() => _settings;
 
   @override
   Future<AppSettings> setFontName(String fontName) async {
@@ -173,6 +177,12 @@ class _FakeSettingsRepository implements SettingsRepository {
   @override
   Future<AppSettings> setUseIcloudSync(bool enabled) async {
     _settings = _settings.copyWith(useIcloudSync: enabled);
+    return _settings;
+  }
+
+  @override
+  Future<AppSettings> setBlockRemoteDiaryRestore(bool enabled) async {
+    _settings = _settings.copyWith(blockRemoteDiaryRestore: enabled);
     return _settings;
   }
 }

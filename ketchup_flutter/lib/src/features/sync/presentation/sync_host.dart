@@ -61,12 +61,15 @@ class _SyncHostState extends ConsumerState<SyncHost> {
     final AppSettings? settings = ref.read(appSettingsProvider).valueOrNull;
     final User? user = ref.read(firebaseUserProvider).valueOrNull;
     final bool enabled = user != null;
+    sync.setSuppressRemoteApplyFromPersistedSettings(settings?.blockRemoteDiaryRestore ?? false);
     debugPrint('[sync] reconfigure firestore=${enabled ? "on" : "off"} uid=${user?.uid}');
     await sync.start(enabled: enabled);
 
     // 재설치 복원 경로를 위해 Google 로그인 여부와 무관하게,
     // 로컬이 비어 있을 때만 iCloud hydrate를 시도합니다.
-    final bool shouldHydrateFromIcloud = Platform.isIOS && settings?.useIcloudSync == true;
+    final bool shouldHydrateFromIcloud = Platform.isIOS &&
+        settings?.useIcloudSync == true &&
+        settings?.blockRemoteDiaryRestore != true;
     if (shouldHydrateFromIcloud && !_hydratingIcloudWithoutGoogle) {
       _hydratingIcloudWithoutGoogle = true;
       try {

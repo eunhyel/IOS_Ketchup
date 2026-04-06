@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:ketchup_flutter/src/core/assets/ketchup_ios_assets.dart';
 
@@ -54,6 +56,7 @@ Future<bool?> showKetchupIosConfirmDialog(
 }
 
 /// iOS `CustomAlertView` 스타일로, 버튼을 1개만 표시합니다.
+/// 본문 길이에 따라 가로·세로 크기가 늘어나며, 하단 버튼과 겹치지 않습니다.
 Future<void> showKetchupIosSingleButtonDialog(
   BuildContext context, {
   required String message,
@@ -63,8 +66,6 @@ Future<void> showKetchupIosSingleButtonDialog(
   final double scale = (w / 375.0).clamp(0.9, 1.2);
 
   const Color containerBg = Color(0xFFFFEBC6);
-  const double containerW = 280;
-  const double containerH = 183;
 
   return showGeneralDialog<void>(
     context: context,
@@ -73,12 +74,15 @@ Future<void> showKetchupIosSingleButtonDialog(
     barrierColor: Colors.black.withValues(alpha: 0.4),
     transitionDuration: const Duration(milliseconds: 180),
     pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
+      final double maxDialogW = math.min(320 * scale, w - 32);
       return Center(
         child: Material(
           color: Colors.transparent,
-          child: SizedBox(
-            width: containerW * scale,
-            height: containerH * scale,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: math.max(200, maxDialogW),
+              maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+            ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(40 * scale),
               child: Container(
@@ -206,57 +210,42 @@ class _IosSingleAlertBody extends StatelessWidget {
   Widget build(BuildContext context) {
     const Color messageColor = Color(0xFF1D1D09);
 
-    return Stack(
-      children: <Widget>[
-        // header part (message + title image)
-        Positioned(
-          left: 0,
-          right: 0,
-          top: 0,
-          height: 110.5 * scale,
-          child: Padding(
-            padding: EdgeInsets.only(top: 10 * scale),
-            child: Column(
-              children: <Widget>[
-                Image.asset(
-                  KetchupIosAssets.popupAlimTit,
-                  width: 90 * scale,
-                  height: 40 * scale,
-                  fit: BoxFit.contain,
-                ),
-                SizedBox(height: 20 * scale),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 27 * scale),
-                  child: Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    maxLines: 10,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: messageColor,
-                      height: 1.25,
-                    ),
-                  ),
-                ),
-              ],
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        top: 10 * scale,
+        left: 20 * scale,
+        right: 20 * scale,
+        bottom: 16 * scale,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Image.asset(
+            KetchupIosAssets.popupAlimTit,
+            width: 90 * scale,
+            height: 40 * scale,
+            fit: BoxFit.contain,
+          ),
+          SizedBox(height: 20 * scale),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 16,
+              color: messageColor,
+              height: 1.25,
             ),
           ),
-        ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: 75.5 * scale,
-          child: Center(
+          SizedBox(height: 20 * scale),
+          Center(
             child: _IosAlertButton(
               scale: scale,
               title: buttonText,
               onTap: onPressed,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

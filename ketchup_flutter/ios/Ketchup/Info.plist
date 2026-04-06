@@ -43,6 +43,8 @@
 	<string>150068919703-frc9svv2ssrbni04kqb4e54b90021m15.apps.googleusercontent.com</string>
 	<key>GIDServerClientID</key>
 	<string>150068919703-l6n8bspvlekht185kf3omcqbeo77r7k8.apps.googleusercontent.com</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>instagram</string>

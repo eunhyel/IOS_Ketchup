@@ -14,7 +14,8 @@ import 'package:ketchup_flutter/src/features/diary/domain/diary_entry.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:ketchup_flutter/src/features/settings/domain/app_settings.dart';
-import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart';
+import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart'
+    show appSettingsProvider;
 import 'package:ketchup_flutter/src/features/sync/presentation/sync_providers.dart';
 import 'package:uuid/uuid.dart';
 
@@ -272,6 +273,17 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
   }
 
   Future<IcloudHydrationStats> hydrateFromIcloudWithoutGoogle() async {
+    if (_ref.read(appSettingsProvider).valueOrNull?.blockRemoteDiaryRestore == true) {
+      debugPrint('[icloud] hydrate skipped (로컬만 초기화 유지)');
+      return const IcloudHydrationStats(
+        fetchedRows: 0,
+        appliedRows: 0,
+        rowsWithImagePayload: 0,
+        rowsWithoutImagePayload: 0,
+        imageSavedRows: 0,
+        imageSaveFailedRows: 0,
+      );
+    }
     final List<Map<String, dynamic>> rows = await IcloudDaySyncBridge.fetchDays().timeout(
       const Duration(seconds: 120),
       onTimeout: () {

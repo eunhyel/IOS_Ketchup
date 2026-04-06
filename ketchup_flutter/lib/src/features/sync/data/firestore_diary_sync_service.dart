@@ -37,8 +37,17 @@ class FirestoreDiarySyncService {
   /// [findLocalIdBySyncKey] 가 null이 되어 `insertFromRemote`로 행이 되살아날 수 있음.
   final Set<String> _suppressStaleNonDeletedApply = <String>{};
 
+  /// 백업 화면 「초기화」로 로컬만 비울 때, 곧바로 Firestore에서 일기를 다시 받지 않도록 합니다.
+  /// [start]에서 `enabled: false`(로그아웃 등)이면 해제됩니다.
+  bool _suppressRemoteApplyAfterLocalReset = false;
+
   /// 원격 반영 후 로컬 목록 갱신(디바운스).
   void Function()? onRemoteApplied;
+
+  /// [SyncHost]가 설정(Isar)에서 읽은 값을 매 [start] 전에 넣습니다.
+  void setSuppressRemoteApplyFromPersistedSettings(bool value) {
+    _suppressRemoteApplyAfterLocalReset = value;
+  }
 
   CollectionReference<Map<String, dynamic>>? _entriesCol(String uid) {
     return _firestore.collection('users').doc(uid).collection('diary_entries');
@@ -47,6 +56,7 @@ class FirestoreDiarySyncService {
   Future<void> start({required bool enabled}) async {
     await stop();
     if (!enabled) {
+      _suppressRemoteApplyAfterLocalReset = false;
       return;
     }
     final User? user = _auth.currentUser;
@@ -80,19 +90,23 @@ class FirestoreDiarySyncService {
     // 재설치 직후 등 로컬 Isar가 비어 있을 때, 첫 스냅샷에서 docChanges가 비거나
     // 캐시 메타데이터만 오는 경우가 있어 원격 전체를 한 번 확실히 적용합니다.
     if (!await _diaryLocal.hasAny()) {
-      try {
-        final QuerySnapshot<Map<String, dynamic>> full = await col.get();
-        _applyingRemote = true;
+      if (_suppressRemoteApplyAfterLocalReset) {
+        debugPrint('[sync] 로컬만 초기화됨 — 원격 전체 재적용 생략');
+      } else {
         try {
-          for (final QueryDocumentSnapshot<Map<String, dynamic>> d in full.docs) {
-            await _applyRemoteDoc(d);
+          final QuerySnapshot<Map<String, dynamic>> full = await col.get();
+          _applyingRemote = true;
+          try {
+            for (final QueryDocumentSnapshot<Map<String, dynamic>> d in full.docs) {
+              await _applyRemoteDoc(d);
+            }
+          } finally {
+            _applyingRemote = false;
           }
-        } finally {
-          _applyingRemote = false;
+          _scheduleRefresh();
+        } catch (e, st) {
+          debugPrint('[sync] 초기 원격 전체 로드 실패: $e $st');
         }
-        _scheduleRefresh();
-      } catch (e, st) {
-        debugPrint('[sync] 초기 원격 전체 로드 실패: $e $st');
       }
     }
 
@@ -180,6 +194,9 @@ class FirestoreDiarySyncService {
   }
 
   Future<void> _applyRemoteDoc(DocumentSnapshot<Map<String, dynamic>> doc) async {
+    if (_suppressRemoteApplyAfterLocalReset) {
+      return;
+    }
     final Map<String, dynamic>? data = doc.data();
     if (data == null) {
       return;

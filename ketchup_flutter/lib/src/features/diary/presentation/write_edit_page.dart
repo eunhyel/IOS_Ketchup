@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:ketchup_flutter/src/core/ads/ketchup_interstitial_ad.dart';
 import 'package:ketchup_flutter/src/core/assets/ketchup_ios_assets.dart';
 import 'package:ketchup_flutter/src/core/dialogs/ketchup_ios_alert_dialog.dart';
 import 'package:ketchup_flutter/src/core/theme/ketchup_typography_extension.dart';
@@ -1059,20 +1060,19 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
       if (id == null) {
         return;
       }
+      await ref
+          .read(diaryEntriesProvider.notifier)
+          .update(
+            id,
+            text: t,
+            date: _selectedDate,
+            defaultImage: _defaultImage,
+            imagePath: _imagePath,
+          );
+      await KetchupInterstitialAd.showAfterSave();
       if (mounted) {
         Navigator.of(context).pop(_calendarDayForPop());
       }
-      unawaited(
-        ref
-            .read(diaryEntriesProvider.notifier)
-            .update(
-              id,
-              text: t,
-              date: _selectedDate,
-              defaultImage: _defaultImage,
-              imagePath: _imagePath,
-            ),
-      );
       return;
     }
 
@@ -1084,20 +1084,19 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
       }
       // 기본 이미지는 항상 고정입니다.
       final int def = _defaultImage;
+      await ref
+          .read(diaryEntriesProvider.notifier)
+          .create(
+            text: text,
+            date: _selectedDate,
+            defaultImage: def,
+            imagePath: _imagePath,
+          );
+      await WriteDraftStorage.clear();
+      await KetchupInterstitialAd.showAfterSave();
       if (mounted) {
         Navigator.of(context).pop(_calendarDayForPop());
       }
-      unawaited(
-        ref
-            .read(diaryEntriesProvider.notifier)
-            .create(
-              text: text,
-              date: _selectedDate,
-              defaultImage: def,
-              imagePath: _imagePath,
-            ),
-      );
-      unawaited(WriteDraftStorage.clear());
     }
   }
 

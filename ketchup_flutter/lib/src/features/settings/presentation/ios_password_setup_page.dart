@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ketchup_flutter/src/core/assets/ketchup_ios_assets.dart';
+import 'package:ketchup_flutter/src/core/dialogs/ketchup_ios_alert_dialog.dart';
 import 'package:ketchup_flutter/src/core/lock/lock_repository.dart';
 import 'package:ketchup_flutter/src/core/lock/password_widgets.dart';
 import 'package:ketchup_flutter/src/core/theme/ketchup_ios_text_styles.dart';
@@ -28,7 +29,28 @@ class _IosPasswordSetupPageState extends ConsumerState<IosPasswordSetupPage> {
   int _step = 0; // 0: 첫 입력, 1: 확인 입력
   String _label = '암호 입력';
 
+  bool _hashLoading = true;
+  bool _hasSavedPassword = false;
+  bool _deletingPassword = false;
+
   String _hash(String password) => sha256.convert(utf8.encode(password)).toString();
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadSavedPasswordFlag());
+  }
+
+  Future<void> _loadSavedPasswordFlag() async {
+    final String? hash = await ref.read(lockRepositoryProvider).loadPasswordHash();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _hashLoading = false;
+      _hasSavedPassword = hash != null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,11 +100,79 @@ class _IosPasswordSetupPageState extends ConsumerState<IosPasswordSetupPage> {
                 onDigit: _onDigit,
                 onDelete: _backspace,
               ),
+              if (!_hashLoading && _hasSavedPassword)
+                Positioned(
+                  right: 16 * scale,
+                  bottom: 8 * scale,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _deletingPassword ? null : _onDeletePasswordTapped,
+                      borderRadius: BorderRadius.circular(4 * scale),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 6 * scale,
+                          vertical: 4 * scale,
+                        ),
+                        child: Text(
+                          '암호 삭제',
+                          style: TextStyle(
+                            fontSize: 12.5 * scale,
+                            height: 1.2,
+                            color: _deletingPassword
+                                ? const Color(0xFF303030).withValues(alpha: 0.38)
+                                : const Color(0xFF5C5C5C),
+                            decoration: TextDecoration.underline,
+                            decorationColor: _deletingPassword
+                                ? const Color(0xFF303030).withValues(alpha: 0.38)
+                                : const Color(0xFF5C5C5C),
+                            fontWeight: ketchupContentWeight(context),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _onDeletePasswordTapped() async {
+    final bool? ok = await showKetchupIosConfirmDialog(
+      context,
+      message: '저장된 암호를 삭제하고 앱 잠금을 끕니다. 계속할까요?',
+      leftText: '아니요',
+      rightText: '예',
+    );
+    if (ok != true || !mounted) {
+      return;
+    }
+    setState(() => _deletingPassword = true);
+    try {
+      await ref.read(lockRepositoryProvider).clearPassword();
+      await ref.read(appSettingsProvider.notifier).setUseLock(false);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('암호를 삭제했습니다.')),
+      );
+      Navigator.of(context).pop();
+    } on Object catch (e) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('암호 삭제 실패: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _deletingPassword = false);
+      }
+    }
   }
 
   void _onDigit(int d) {

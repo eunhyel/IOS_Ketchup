@@ -13,14 +13,17 @@ class SettingsLocalDataSource {
     if (stored != null) {
       return stored.toDomain();
     }
-    final AppSettings defaults = const AppSettings(
-      useLock: false,
-      fontName: 'font_syong',
-      useCloudSync: false,
-      useIcloudSync: false,
-    );
-    await save(defaults);
-    return defaults;
+    await save(AppSettings.emptyDatabaseDefaults);
+    return AppSettings.emptyDatabaseDefaults;
+  }
+
+  /// [load]와 동일한 규칙으로, Isar에서 **동기** 읽기합니다. 첫 MaterialApp 프레임에 글꼴을 맞추는 데 쓰입니다.
+  AppSettings loadSync() {
+    final IsarAppSettings? stored = _isar.isarAppSettings.getSync(1);
+    if (stored != null) {
+      return stored.toDomain();
+    }
+    return AppSettings.emptyDatabaseDefaults;
   }
 
   Future<void> save(AppSettings settings) async {
@@ -41,7 +44,13 @@ class SettingsLocalDataSource {
     final IsarAppSettings? row = await _isar.isarAppSettings.get(1);
     if (row == null) {
       await save(
-        AppSettings(useLock: false, fontName: key, useCloudSync: false, useIcloudSync: false),
+        AppSettings(
+          useLock: false,
+          fontName: key,
+          useCloudSync: false,
+          useIcloudSync: false,
+          blockRemoteDiaryRestore: false,
+        ),
       );
       return;
     }

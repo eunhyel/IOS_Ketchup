@@ -17,22 +17,27 @@ const IsarAppSettingsSchema = CollectionSchema(
   name: r'IsarAppSettings',
   id: -9223260734181630302,
   properties: {
-    r'fontName': PropertySchema(
+    r'blockRemoteDiaryRestore': PropertySchema(
       id: 0,
+      name: r'blockRemoteDiaryRestore',
+      type: IsarType.bool,
+    ),
+    r'fontName': PropertySchema(
+      id: 1,
       name: r'fontName',
       type: IsarType.string,
     ),
     r'useCloudSync': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'useCloudSync',
       type: IsarType.bool,
     ),
     r'useIcloudSync': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'useIcloudSync',
       type: IsarType.bool,
     ),
-    r'useLock': PropertySchema(id: 3, name: r'useLock', type: IsarType.bool),
+    r'useLock': PropertySchema(id: 4, name: r'useLock', type: IsarType.bool),
   },
 
   estimateSize: _isarAppSettingsEstimateSize,
@@ -66,10 +71,11 @@ void _isarAppSettingsSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.fontName);
-  writer.writeBool(offsets[1], object.useCloudSync);
-  writer.writeBool(offsets[2], object.useIcloudSync);
-  writer.writeBool(offsets[3], object.useLock);
+  writer.writeBool(offsets[0], object.blockRemoteDiaryRestore);
+  writer.writeString(offsets[1], object.fontName);
+  writer.writeBool(offsets[2], object.useCloudSync);
+  writer.writeBool(offsets[3], object.useIcloudSync);
+  writer.writeBool(offsets[4], object.useLock);
 }
 
 IsarAppSettings _isarAppSettingsDeserialize(
@@ -79,11 +85,12 @@ IsarAppSettings _isarAppSettingsDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = IsarAppSettings();
-  object.fontName = reader.readString(offsets[0]);
+  object.blockRemoteDiaryRestore = reader.readBoolOrNull(offsets[0]);
+  object.fontName = reader.readString(offsets[1]);
   object.id = id;
-  object.useCloudSync = reader.readBoolOrNull(offsets[1]);
-  object.useIcloudSync = reader.readBoolOrNull(offsets[2]);
-  object.useLock = reader.readBool(offsets[3]);
+  object.useCloudSync = reader.readBoolOrNull(offsets[2]);
+  object.useIcloudSync = reader.readBoolOrNull(offsets[3]);
+  object.useLock = reader.readBool(offsets[4]);
   return object;
 }
 
@@ -95,12 +102,14 @@ P _isarAppSettingsDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
-    case 1:
       return (reader.readBoolOrNull(offset)) as P;
+    case 1:
+      return (reader.readString(offset)) as P;
     case 2:
       return (reader.readBoolOrNull(offset)) as P;
     case 3:
+      return (reader.readBoolOrNull(offset)) as P;
+    case 4:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -206,6 +215,36 @@ extension IsarAppSettingsQueryWhere
 
 extension IsarAppSettingsQueryFilter
     on QueryBuilder<IsarAppSettings, IsarAppSettings, QFilterCondition> {
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
+  blockRemoteDiaryRestoreIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'blockRemoteDiaryRestore'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
+  blockRemoteDiaryRestoreIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'blockRemoteDiaryRestore'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
+  blockRemoteDiaryRestoreEqualTo(bool? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'blockRemoteDiaryRestore',
+          value: value,
+        ),
+      );
+    });
+  }
+
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
   fontNameEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -475,6 +514,20 @@ extension IsarAppSettingsQueryLinks
 extension IsarAppSettingsQuerySortBy
     on QueryBuilder<IsarAppSettings, IsarAppSettings, QSortBy> {
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+  sortByBlockRemoteDiaryRestore() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'blockRemoteDiaryRestore', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+  sortByBlockRemoteDiaryRestoreDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'blockRemoteDiaryRestore', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
   sortByFontName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'fontName', Sort.asc);
@@ -532,6 +585,20 @@ extension IsarAppSettingsQuerySortBy
 
 extension IsarAppSettingsQuerySortThenBy
     on QueryBuilder<IsarAppSettings, IsarAppSettings, QSortThenBy> {
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+  thenByBlockRemoteDiaryRestore() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'blockRemoteDiaryRestore', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+  thenByBlockRemoteDiaryRestoreDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'blockRemoteDiaryRestore', Sort.desc);
+    });
+  }
+
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
   thenByFontName() {
     return QueryBuilder.apply(this, (query) {
@@ -602,6 +669,13 @@ extension IsarAppSettingsQuerySortThenBy
 
 extension IsarAppSettingsQueryWhereDistinct
     on QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct> {
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct>
+  distinctByBlockRemoteDiaryRestore() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'blockRemoteDiaryRestore');
+    });
+  }
+
   QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct> distinctByFontName({
     bool caseSensitive = true,
   }) {
@@ -637,6 +711,13 @@ extension IsarAppSettingsQueryProperty
   QueryBuilder<IsarAppSettings, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, bool?, QQueryOperations>
+  blockRemoteDiaryRestoreProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'blockRemoteDiaryRestore');
     });
   }
 

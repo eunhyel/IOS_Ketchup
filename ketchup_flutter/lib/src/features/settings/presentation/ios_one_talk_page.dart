@@ -123,12 +123,11 @@ class IosOneTalkPage extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
               ),
-              // 두 번째 말풍선 (Rh1-kW-b7h)
+              // 두 번째 말풍선 — 고정 높이 제거(글/시스템 글자 크기에 맞춤)
               Positioned(
                 left: 27 * scale,
                 top: 255.5 * scale,
                 width: 212 * scale,
-                height: 56 * scale,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -137,17 +136,17 @@ class IosOneTalkPage extends StatelessWidget {
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
                       13 * scale,
-                      9 * scale,
+                      10 * scale,
                       8 * scale,
-                      6 * scale,
+                      10 * scale,
                     ),
                     child: Text(
-                      '출시했습니다! \n덕분에 행복하네요 :)',
+                      '출시했습니다!\n덕분에 행복하네요 :)',
                       style: TextStyle(
                         fontSize: 17 * scale,
                         color: _textColor,
                         fontWeight: ketchupContentWeight(context),
-                        height: 1.15,
+                        height: 1.25,
                       ),
                     ),
                   ),

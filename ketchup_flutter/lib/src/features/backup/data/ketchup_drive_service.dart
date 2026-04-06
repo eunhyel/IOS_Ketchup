@@ -34,6 +34,44 @@ class KetchupDriveService {
 
   static String sha256Hex(Uint8List bytes) => sha256.convert(bytes).toString();
 
+  /// Google Drive [backupIsar] 와 동일한 `ketchup_backup.zip` 바이트(로컬 공유·저장용).
+  static Future<Uint8List> buildBackupZipBytes({
+    required Uint8List isarBytes,
+    required String appVersion,
+    required Isar currentIsar,
+  }) async {
+    final String hash = sha256Hex(isarBytes);
+    final Uint8List? imagesBundle = await buildImagesBundleBytesForBackup(currentIsar);
+    final Map<String, BackupFileInfo> files = <String, BackupFileInfo>{
+      dataName: BackupFileInfo(sha256: hash, size: isarBytes.length),
+    };
+    if (imagesBundle != null && imagesBundle.isNotEmpty) {
+      files[imagesBundleName] = BackupFileInfo(
+        sha256: sha256Hex(imagesBundle),
+        size: imagesBundle.length,
+      );
+    }
+
+    final BackupManifestV2 manifest = BackupManifestV2(
+      schemaVersion: 2,
+      exportedAt: DateTime.now().toUtc(),
+      appVersion: appVersion,
+      files: files,
+    );
+    final Uint8List manifestBytes = Uint8List.fromList(
+      utf8.encode(BackupManifestV2.encode(manifest)),
+    );
+
+    final Archive zipArchive = Archive();
+    zipArchive.addFile(ArchiveFile.bytes(manifestName, manifestBytes));
+    zipArchive.addFile(ArchiveFile.bytes(dataName, isarBytes));
+    if (imagesBundle != null && imagesBundle.isNotEmpty) {
+      zipArchive.addFile(ArchiveFile.bytes(imagesBundleName, imagesBundle));
+    }
+    final List<int> zipped = ZipEncoder().encode(zipArchive);
+    return Uint8List.fromList(zipped);
+  }
+
   Future<String> _ensureFolderId() async {
     final String? found = await _findFolderId();
     if (found != null && found.isNotEmpty) {
@@ -66,39 +104,15 @@ class KetchupDriveService {
     required Isar currentIsar,
   }) async {
     final String folderId = await _ensureFolderId();
-    final String hash = sha256Hex(isarBytes);
-    final Uint8List? imagesBundle = await _buildImagesBundleBytes(currentIsar);
-    final Map<String, BackupFileInfo> files = <String, BackupFileInfo>{
-      dataName: BackupFileInfo(sha256: hash, size: isarBytes.length),
-    };
-    if (imagesBundle != null && imagesBundle.isNotEmpty) {
-      files[imagesBundleName] = BackupFileInfo(
-        sha256: sha256Hex(imagesBundle),
-        size: imagesBundle.length,
-      );
-    }
-
-    final BackupManifestV2 manifest = BackupManifestV2(
-      schemaVersion: 2,
-      exportedAt: DateTime.now().toUtc(),
+    final Uint8List zipped = await buildBackupZipBytes(
+      isarBytes: isarBytes,
       appVersion: appVersion,
-      files: files,
+      currentIsar: currentIsar,
     );
-    final Uint8List manifestBytes = Uint8List.fromList(
-      utf8.encode(BackupManifestV2.encode(manifest)),
-    );
-
-    final Archive zipArchive = Archive();
-    zipArchive.addFile(ArchiveFile.bytes(manifestName, manifestBytes));
-    zipArchive.addFile(ArchiveFile.bytes(dataName, isarBytes));
-    if (imagesBundle != null && imagesBundle.isNotEmpty) {
-      zipArchive.addFile(ArchiveFile.bytes(imagesBundleName, imagesBundle));
-    }
-    final List<int> zipped = ZipEncoder().encode(zipArchive);
     await _uploadOrUpdate(
       folderId: folderId,
       fileName: zipBackupName,
-      bytes: Uint8List.fromList(zipped),
+      bytes: zipped,
       mimeType: 'application/zip',
     );
     // 예전 포맷(폴더에 파일 3개) 잔여물 제거 — ZIP에 동일 내용이 포함됨.
@@ -383,7 +397,7 @@ class KetchupDriveService {
     return builder.takeBytes();
   }
 
-  Future<Uint8List?> _buildImagesBundleBytes(Isar currentIsar) async {
+  static Future<Uint8List?> buildImagesBundleBytesForBackup(Isar currentIsar) async {
     try {
       final Directory doc = await getApplicationDocumentsDirectory();
       final Directory imgDir = Directory(p.join(doc.path, 'ketchup_images'));
@@ -441,6 +455,9 @@ class KetchupDriveService {
       return null;
     }
   }
+
+  Future<Uint8List?> _buildImagesBundleBytes(Isar currentIsar) =>
+      buildImagesBundleBytesForBackup(currentIsar);
 
   Uint8List? _readZipEntryBytes(Archive archive, String baseName) {
     for (final ArchiveFile f in archive.files) {

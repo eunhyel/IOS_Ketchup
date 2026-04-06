@@ -9,7 +9,8 @@ final Provider<SettingsRepository> settingsRepositoryProvider = Provider<Setting
 );
 
 class AppSettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
-  AppSettingsNotifier(this._repository) : super(const AsyncValue.loading()) {
+  AppSettingsNotifier(this._repository)
+      : super(AsyncValue.data(_repository.loadSync())) {
     load();
   }
 
@@ -72,6 +73,20 @@ class AppSettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     }
     final AsyncValue<AppSettings> result = await AsyncValue.guard(
       () => _repository.setUseIcloudSync(enabled),
+    );
+    if (!mounted) {
+      return;
+    }
+    state = result;
+  }
+
+  Future<void> setBlockRemoteDiaryRestore(bool enabled) async {
+    final AppSettings? previous = state.valueOrNull;
+    if (previous != null && mounted) {
+      state = AsyncValue.data(previous.copyWith(blockRemoteDiaryRestore: enabled));
+    }
+    final AsyncValue<AppSettings> result = await AsyncValue.guard(
+      () => _repository.setBlockRemoteDiaryRestore(enabled),
     );
     if (!mounted) {
       return;

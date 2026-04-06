@@ -3,10 +3,15 @@ import 'package:ketchup_flutter/src/features/settings/domain/app_settings.dart';
 
 abstract class SettingsRepository {
   Future<AppSettings> load();
+
+  /// DB에 저장된 설정을 동기로 읽습니다. 행이 없으면 [AppSettings.emptyDatabaseDefaults]와 같습니다.
+  AppSettings loadSync();
+
   Future<AppSettings> setUseLock(bool enabled);
   Future<AppSettings> setFontName(String fontName);
   Future<AppSettings> setUseCloudSync(bool enabled);
   Future<AppSettings> setUseIcloudSync(bool enabled);
+  Future<AppSettings> setBlockRemoteDiaryRestore(bool enabled);
 }
 
 class IsarSettingsRepository implements SettingsRepository {
@@ -16,6 +21,9 @@ class IsarSettingsRepository implements SettingsRepository {
 
   @override
   Future<AppSettings> load() => _local.load();
+
+  @override
+  AppSettings loadSync() => _local.loadSync();
 
   @override
   Future<AppSettings> setUseLock(bool enabled) async {
@@ -45,6 +53,14 @@ class IsarSettingsRepository implements SettingsRepository {
   Future<AppSettings> setUseIcloudSync(bool enabled) async {
     final AppSettings current = await _local.load();
     final AppSettings next = current.copyWith(useIcloudSync: enabled);
+    await _local.save(next);
+    return next;
+  }
+
+  @override
+  Future<AppSettings> setBlockRemoteDiaryRestore(bool enabled) async {
+    final AppSettings current = await _local.load();
+    final AppSettings next = current.copyWith(blockRemoteDiaryRestore: enabled);
     await _local.save(next);
     return next;
   }

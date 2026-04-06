@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ketchup_flutter/src/features/settings/domain/app_settings.dart';
@@ -20,11 +21,13 @@ class SettingsPage extends ConsumerWidget {
         data: (AppSettings settings) => ListView(
           padding: const EdgeInsets.fromLTRB(14, 10, 14, 20),
           children: <Widget>[
-            const _MenuTile(
+            _MenuTile(
               title: 'Firestore 동기화',
-              subtitle:
-                  '백업 화면에서 Google 로그인만 하면 일기가 Firestore에 자동 동기화됩니다. '
-                  '별도 ON 토글은 없습니다. iOS에서 iCloud(CloudKit)는 백업 화면의 동기화 토글을 사용하세요.',
+              subtitle: kReleaseMode
+                  ? '백업 화면에서 Google 로그인만 하면 일기가 Firestore에 자동 동기화됩니다. '
+                      '별도 ON 토글은 없습니다.'
+                  : '백업 화면에서 Google 로그인만 하면 일기가 Firestore에 자동 동기화됩니다. '
+                      '별도 ON 토글은 없습니다. iOS에서 iCloud(CloudKit)는 백업 화면의 동기화 토글을 사용하세요.',
             ),
             _MenuTile(
               title: '암호 설정',

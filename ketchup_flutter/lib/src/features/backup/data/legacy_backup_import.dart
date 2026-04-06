@@ -52,6 +52,7 @@ class LegacyBackupImport {
           ..useLock = false
           ..useCloudSync = false
           ..useIcloudSync = false
+          ..blockRemoteDiaryRestore = false
           ..fontName = 'font_syong',
       );
     });
@@ -125,6 +126,7 @@ class LegacyBackupImport {
           ..useLock = false
           ..useCloudSync = false
           ..useIcloudSync = false
+          ..blockRemoteDiaryRestore = false
           ..fontName = 'font_syong',
       );
     });

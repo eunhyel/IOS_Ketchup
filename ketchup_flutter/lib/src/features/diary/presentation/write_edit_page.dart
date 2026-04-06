@@ -72,6 +72,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
   final GlobalKey _writeTextFieldKey = GlobalKey();
   bool _ensureWriteFieldVisibleScheduled = false;
   Timer? _draftSaveTimer;
+  bool _suppressDraftPersistence = false;
   String _lastAcceptedText = '';
   bool _applyingLineLimitRollback = false;
   bool _lineLimitDialogOpen = false;
@@ -236,7 +237,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
   }
 
   void _schedulePersistComposeDraft() {
-    if (_mode != WriteEditMode.create) {
+    if (_mode != WriteEditMode.create || _suppressDraftPersistence) {
       return;
     }
     _draftSaveTimer?.cancel();
@@ -324,7 +325,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
   }
 
   Future<void> _flushComposeDraftNow() async {
-    if (_mode != WriteEditMode.create) {
+    if (_mode != WriteEditMode.create || _suppressDraftPersistence) {
       return;
     }
     await WriteDraftStorage.save(
@@ -840,18 +841,19 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
         return;
       }
       final Uint8List png = bytes.buffer.asUint8List();
-      final bool ok = await InstagramStoryShare.shareDiaryCardAsStory(png);
+      final RenderBox? box = context.findRenderObject() as RenderBox?;
+      final Rect? shareOrigin = box == null
+          ? null
+          : box.localToGlobal(Offset.zero) & box.size;
+      final bool ok = await InstagramStoryShare.shareDiaryCardAsStory(
+        png,
+        sharePositionOrigin: shareOrigin,
+      );
       if (!mounted) {
         return;
       }
-      if (Platform.isIOS && !ok) {
-        _snack('인스타그램이 설치되어 있지 않거나 공유할 수 없습니다.');
-      } else if (Platform.isAndroid && !ok) {
+      if (!ok) {
         _snack('공유를 열 수 없습니다.');
-      }
-    } on MissingFacebookAppIdException catch (e) {
-      if (mounted) {
-        _snack(e.message);
       }
     } catch (e) {
       if (mounted) {
@@ -1092,6 +1094,9 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
             defaultImage: def,
             imagePath: _imagePath,
           );
+      // 저장 성공 이후에는 광고 노출/라이프사이클 변화가 있어도 초안을 다시 남기지 않습니다.
+      _suppressDraftPersistence = true;
+      _draftSaveTimer?.cancel();
       await WriteDraftStorage.clear();
       await KetchupInterstitialAd.showAfterSave();
       if (mounted) {

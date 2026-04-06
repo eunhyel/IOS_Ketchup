@@ -7,8 +7,8 @@ import 'package:flutter/foundation.dart';
 /// - 디버그: Google 샘플 광고
 /// - 릴리스: Android / iOS 각각 프로덕션 배너 ID. `--dart-define=ADMOB_BANNER_ANDROID=...` 등으로 덮어쓸 수 있음.
 abstract final class AdConfig {
-  /// 전면 광고 노출 여부. 나중에 켤 때 `true`로 변경.
-  static const bool enableInterstitialAds = false;
+  /// 전면 광고 노출 여부.
+  static const bool enableInterstitialAds = true;
 
   static const String _testAndroidBanner =
       'ca-app-pub-3940256099942544/6300978111';

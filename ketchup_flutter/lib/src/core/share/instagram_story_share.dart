@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
@@ -12,35 +13,59 @@ class InstagramStoryShare {
   static const MethodChannel _channel = MethodChannel('com.o2a.ketchup/instagram_story');
 
   /// [pngBytes] PNG 바이트(스티커). iOS 네이티브에서 JPEG 로 변환 후 붙여넣기합니다.
-  static Future<bool> shareDiaryCardAsStory(Uint8List pngBytes) async {
+  static Future<bool> shareDiaryCardAsStory(
+    Uint8List pngBytes, {
+    Rect? sharePositionOrigin,
+  }) async {
     if (Platform.isIOS) {
       try {
         final bool? ok = await _channel.invokeMethod<bool>(
           'shareInstagramStorySticker',
           <String, dynamic>{'png': pngBytes},
         );
-        return ok ?? false;
-      } on PlatformException catch (e) {
-        if (e.code == 'missing_facebook_app_id') {
-          throw MissingFacebookAppIdException(e.message ?? e.code);
+        if (ok == true) {
+          return true;
         }
-        rethrow;
+        // 인스타 미설치/전용 스토리 공유 실패 시 시스템 공유 시트로 폴백합니다.
+        return _shareWithSystemSheet(
+          pngBytes,
+          sharePositionOrigin: sharePositionOrigin,
+        );
+      } on PlatformException {
+        // iOS 인스타 스토리 공유 전용 경로 실패(미설치/설정 누락 포함) 시 시스템 공유 시트로 폴백합니다.
+        return _shareWithSystemSheet(
+          pngBytes,
+          sharePositionOrigin: sharePositionOrigin,
+        );
       }
     }
     if (Platform.isAndroid) {
-      try {
-        final Directory dir = await getTemporaryDirectory();
-        final File f = File(
-          '${dir.path}/ketchup_story_${DateTime.now().millisecondsSinceEpoch}.png',
-        );
-        await f.writeAsBytes(pngBytes);
-        await Share.shareXFiles(<XFile>[XFile(f.path)]);
-        return true;
-      } catch (_) {
-        return false;
-      }
+      return _shareWithSystemSheet(
+        pngBytes,
+        sharePositionOrigin: sharePositionOrigin,
+      );
     }
     return false;
+  }
+
+  static Future<bool> _shareWithSystemSheet(
+    Uint8List pngBytes, {
+    Rect? sharePositionOrigin,
+  }) async {
+    try {
+      final Directory dir = await getTemporaryDirectory();
+      final File f = File(
+        '${dir.path}/ketchup_story_${DateTime.now().millisecondsSinceEpoch}.png',
+      );
+      await f.writeAsBytes(pngBytes);
+      await Share.shareXFiles(
+        <XFile>[XFile(f.path)],
+        sharePositionOrigin: sharePositionOrigin,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }
 

@@ -12,6 +12,7 @@ abstract class SettingsRepository {
   Future<AppSettings> setUseCloudSync(bool enabled);
   Future<AppSettings> setUseIcloudSync(bool enabled);
   Future<AppSettings> setBlockRemoteDiaryRestore(bool enabled);
+  Future<AppSettings> setRemoveAds(bool enabled);
 }
 
 class IsarSettingsRepository implements SettingsRepository {
@@ -20,7 +21,9 @@ class IsarSettingsRepository implements SettingsRepository {
   final SettingsLocalDataSource _local;
 
   @override
-  Future<AppSettings> load() => _local.load();
+  Future<AppSettings> load() async {
+    return _local.load();
+  }
 
   @override
   AppSettings loadSync() => _local.loadSync();
@@ -61,6 +64,14 @@ class IsarSettingsRepository implements SettingsRepository {
   Future<AppSettings> setBlockRemoteDiaryRestore(bool enabled) async {
     final AppSettings current = await _local.load();
     final AppSettings next = current.copyWith(blockRemoteDiaryRestore: enabled);
+    await _local.save(next);
+    return next;
+  }
+
+  @override
+  Future<AppSettings> setRemoveAds(bool enabled) async {
+    final AppSettings current = await _local.load();
+    final AppSettings next = current.copyWith(removeAds: enabled);
     await _local.save(next);
     return next;
   }

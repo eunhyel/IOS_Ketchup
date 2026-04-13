@@ -50,6 +50,7 @@ class SettingsLocalDataSource {
           useCloudSync: false,
           useIcloudSync: false,
           blockRemoteDiaryRestore: false,
+          removeAds: false,
         ),
       );
       return;

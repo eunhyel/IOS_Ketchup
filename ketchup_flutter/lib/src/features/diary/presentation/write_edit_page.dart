@@ -15,6 +15,7 @@ import 'package:ketchup_flutter/src/core/share/instagram_story_share.dart';
 import 'package:ketchup_flutter/src/features/diary/data/local/write_draft_storage.dart';
 import 'package:ketchup_flutter/src/features/diary/domain/diary_entry.dart';
 import 'package:ketchup_flutter/src/features/diary/presentation/diary_providers.dart';
+import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -369,7 +370,9 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
     // 짧아 커서가 키보드에 가려진 채로 남을 수 있음.
     // 인셋 비례 패딩은 키보드 닫힘 애니메이션 중 레이아웃 변동이 커져 버벅임이 생길 수 있어
     // 키보드 표시 시 고정 추가 패딩으로 단순화합니다.
-    final double keyboardExtraPad = (keyboardInset > 0 && _editable) ? 220.0 : 0.0;
+    final double keyboardExtraPad = (keyboardInset > 0 && _editable)
+        ? 220.0
+        : 0.0;
 
     return PopScope(
       canPop: false,
@@ -628,12 +631,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
     if (_imagePath != null) {
       final File f = File(_imagePath!);
       if (f.existsSync()) {
-        return Image.file(
-          f,
-          fit: fit,
-          width: photoSize,
-          height: photoSize,
-        );
+        return Image.file(f, fit: fit, width: photoSize, height: photoSize);
       }
     }
     return Image.asset(
@@ -874,9 +872,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
             width: w,
             height: w,
             child: InteractiveViewer(
-              child: Center(
-                child: _buildPhotoFill(w, preview: true),
-              ),
+              child: Center(child: _buildPhotoFill(w, preview: true)),
             ),
           ),
         );
@@ -1046,6 +1042,8 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
   }
 
   Future<void> _save() async {
+    final bool removeAds =
+        ref.read(appSettingsProvider).valueOrNull?.removeAds ?? false;
     if (_mode == WriteEditMode.edit) {
       if (!_isDirty) {
         if (mounted) {
@@ -1071,10 +1069,11 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
             defaultImage: _defaultImage,
             imagePath: _imagePath,
           );
-      await KetchupInterstitialAd.showAfterSave();
+      final DateTime popDay = _calendarDayForPop();
       if (mounted) {
-        Navigator.of(context).pop(_calendarDayForPop());
+        Navigator.of(context).pop(popDay);
       }
+      // 전면 광고는 「새 글 작성 완료」에만 노출 (수정 저장에는 띄우지 않음)
       return;
     }
 
@@ -1098,9 +1097,11 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
       _suppressDraftPersistence = true;
       _draftSaveTimer?.cancel();
       await WriteDraftStorage.clear();
-      await KetchupInterstitialAd.showAfterSave();
+      // 전면은 메인으로 나가기 전에 띄워 저장 직후 바로 노출 (지연 없음)
+      await KetchupInterstitialAd.showAfterSave(removeAds: removeAds);
+      final DateTime popDay = _calendarDayForPop();
       if (mounted) {
-        Navigator.of(context).pop(_calendarDayForPop());
+        Navigator.of(context).pop(popDay);
       }
     }
   }
@@ -1176,4 +1177,3 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
     }());
   }
 }
-

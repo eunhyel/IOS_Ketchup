@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="com.android.vending.BILLING"/>
     <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
     <application
         android:label="Ketchup"
@@ -46,6 +47,13 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <!-- Play 서비스 광고 컴포넌트 조회 (Android 11+). 없으면
+             ServiceBindIntentUtils / 전면 로드 실패(code 3)가 날 수 있음 -->
+        <intent>
+            <action android:name="com.google.android.gms.ads.service.START"/>
+        </intent>
+        <package android:name="com.google.android.gms"/>
+        <package android:name="com.android.vending"/>
         <package android:name="com.instagram.android"/>
     </queries>
 </manifest>

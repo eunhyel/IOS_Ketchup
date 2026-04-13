@@ -2,18 +2,41 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:ketchup_flutter/src/core/ads/ad_config.dart';
+import 'package:ketchup_flutter/src/features/settings/domain/app_settings.dart';
+import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart';
 
 /// 메인 등 하단 고정 배너용 AdMob 슬롯 (Android / iOS만).
-class KetchupBannerAdSlot extends StatefulWidget {
+/// [AdConfig.respectRemoveAdsUserPreference]가 true일 때만 [AppSettings.removeAds]를 반영합니다.
+class KetchupBannerAdSlot extends ConsumerWidget {
   const KetchupBannerAdSlot({super.key});
 
   @override
-  State<KetchupBannerAdSlot> createState() => _KetchupBannerAdSlotState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (AdConfig.respectRemoveAdsUserPreference) {
+      final bool removeAds = ref.watch(
+        appSettingsProvider.select(
+          (AsyncValue<AppSettings> s) => s.valueOrNull?.removeAds ?? false,
+        ),
+      );
+      if (removeAds) {
+        return const SizedBox.shrink();
+      }
+    }
+    return const _KetchupBannerAdLoader();
+  }
 }
 
-class _KetchupBannerAdSlotState extends State<KetchupBannerAdSlot> {
+class _KetchupBannerAdLoader extends StatefulWidget {
+  const _KetchupBannerAdLoader();
+
+  @override
+  State<_KetchupBannerAdLoader> createState() => _KetchupBannerAdLoaderState();
+}
+
+class _KetchupBannerAdLoaderState extends State<_KetchupBannerAdLoader> {
   BannerAd? _ad;
   bool _loaded = false;
   bool _loadFailed = false;

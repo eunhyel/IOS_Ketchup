@@ -19,7 +19,8 @@ Future<bool?> showKetchupIosConfirmDialog(
 
   const Color containerBg = Color(0xFFFFEBC6);
   const double containerW = 280;
-  const double containerH = 183;
+  /// 상단(메시지) + 하단(버튼) [Positioned] 높이 합과 일치해야 합니다. (이전 183은 186과 불일치 + Android 글리프로 Column 오버플로)
+  const double containerH = 190;
 
   return showGeneralDialog<bool?>(
     context: context,
@@ -130,7 +131,7 @@ class _IosAlertBody extends StatelessWidget {
           left: 0,
           right: 0,
           top: 0,
-          height: 110.5 * scale,
+          height: 114.5 * scale,
           child: Padding(
             padding: EdgeInsets.only(top: 10 * scale),
             child: Column(
@@ -142,17 +143,21 @@ class _IosAlertBody extends StatelessWidget {
                   fit: BoxFit.contain,
                 ),
                 SizedBox(height: 20 * scale),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 27 * scale),
-                  child: Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    maxLines: 10,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: messageColor,
-                      height: 1.25,
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 27 * scale),
+                    child: Center(
+                      child: Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        maxLines: 10,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: messageColor,
+                          height: 1.25,
+                        ),
+                      ),
                     ),
                   ),
                 ),

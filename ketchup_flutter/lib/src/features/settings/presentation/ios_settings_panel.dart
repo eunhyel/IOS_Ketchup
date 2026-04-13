@@ -6,6 +6,7 @@ import 'package:ketchup_flutter/src/core/theme/ketchup_typography_extension.dart
 import 'package:ketchup_flutter/src/features/settings/presentation/ios_font_picker_page.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/ios_one_talk_page.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/ios_password_setup_page.dart';
+import 'package:ketchup_flutter/src/features/settings/presentation/ios_remove_ads_page.dart';
 
 /// iOS `SettingView` — 왼쪽 280pt 패널 + 어두운 오버레이, 스와이프/탭으로 닫기.
 Future<void> showKetchupIosSettingsPanel(BuildContext context, WidgetRef ref) {
@@ -15,22 +16,33 @@ Future<void> showKetchupIosSettingsPanel(BuildContext context, WidgetRef ref) {
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: Colors.black.withValues(alpha: 0.57),
     transitionDuration: const Duration(milliseconds: 280),
-    pageBuilder: (BuildContext context, Animation<double> a1, Animation<double> a2) {
-      final Size sz = MediaQuery.sizeOf(context);
-      return SizedBox(
-        width: sz.width,
-        height: sz.height,
-        child: const _IosSettingsPanelBody(),
-      );
-    },
-    transitionBuilder: (BuildContext context, Animation<double> anim, Animation<double> _, Widget child) {
-      return SlideTransition(
-        position: Tween<Offset>(begin: const Offset(-1, 0), end: Offset.zero).animate(
-          CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-        ),
-        child: child,
-      );
-    },
+    pageBuilder:
+        (BuildContext context, Animation<double> a1, Animation<double> a2) {
+          final Size sz = MediaQuery.sizeOf(context);
+          return SizedBox(
+            width: sz.width,
+            height: sz.height,
+            child: const _IosSettingsPanelBody(),
+          );
+        },
+    transitionBuilder:
+        (
+          BuildContext context,
+          Animation<double> anim,
+          Animation<double> _,
+          Widget child,
+        ) {
+          return SlideTransition(
+            position:
+                Tween<Offset>(
+                  begin: const Offset(-1, 0),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+                ),
+            child: child,
+          );
+        },
   );
 }
 
@@ -41,6 +53,7 @@ class _IosSettingsPanelBody extends ConsumerWidget {
     '암호 설정',
     '백업 및 동기화',
     '글씨체 변경',
+    '광고 제거',
     '개발자 한마디',
     '현재 버전',
   ];
@@ -48,7 +61,7 @@ class _IosSettingsPanelBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final double h = MediaQuery.sizeOf(context).height;
-    const String version = '1.1.4';
+    const String version = '1.1.7';
 
     return Material(
       color: Colors.transparent,
@@ -70,7 +83,9 @@ class _IosSettingsPanelBody extends ConsumerWidget {
               context: context,
               removeTop: true,
               child: Padding(
-                padding: EdgeInsets.only(top: MediaQuery.paddingOf(context).top + 56),
+                padding: EdgeInsets.only(
+                  top: MediaQuery.paddingOf(context).top + 56,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   mainAxisSize: MainAxisSize.min,
@@ -131,28 +146,36 @@ class _IosSettingsPanelBody extends ConsumerWidget {
   }
 
   Future<void> _onTap(BuildContext context, WidgetRef ref, int index) async {
-    Navigator.of(context).pop();
+    // 다이얼로그 context는 pop 직후 unmount 되므로, 남아 있는 Navigator 쪽 context를 먼저 잡습니다.
+    final NavigatorState nav = Navigator.of(context);
+    final BuildContext shellContext = nav.context;
+    nav.pop();
     await Future<void>.delayed(const Duration(milliseconds: 50));
-    if (!context.mounted) {
+    if (!shellContext.mounted) {
       return;
     }
     switch (index) {
       case 0:
-        await Navigator.of(context).pushNamed(IosPasswordSetupPage.routeName);
+        await Navigator.of(
+          shellContext,
+        ).pushNamed(IosPasswordSetupPage.routeName);
         break;
       case 1:
-        await Navigator.of(context).pushNamed(BackupPage.routeName);
+        await Navigator.of(shellContext).pushNamed(BackupPage.routeName);
         break;
       case 2:
-        await Navigator.of(context).pushNamed(IosFontPickerPage.routeName);
+        await Navigator.of(shellContext).pushNamed(IosFontPickerPage.routeName);
         break;
       case 3:
-        await Navigator.of(context).pushNamed(IosOneTalkPage.routeName);
+        await Navigator.of(shellContext).pushNamed(IosRemoveAdsPage.routeName);
         break;
       case 4:
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('현재 버전: 1.1.4')),
-        );
+        await Navigator.of(shellContext).pushNamed(IosOneTalkPage.routeName);
+        break;
+      case 5:
+        ScaffoldMessenger.of(
+          shellContext,
+        ).showSnackBar(const SnackBar(content: Text('현재 버전: 1.1.7')));
         break;
       default:
         break;

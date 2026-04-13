@@ -93,9 +93,28 @@ class AppSettingsNotifier extends StateNotifier<AsyncValue<AppSettings>> {
     }
     state = result;
   }
+
+  Future<void> setRemoveAds(bool enabled) async {
+    final AppSettings? previous = state.valueOrNull;
+    if (previous != null && mounted) {
+      state = AsyncValue.data(previous.copyWith(removeAds: enabled));
+    }
+    final AsyncValue<AppSettings> result = await AsyncValue.guard(
+      () => _repository.setRemoveAds(enabled),
+    );
+    if (!mounted) {
+      return;
+    }
+    state = result;
+  }
 }
 
 final StateNotifierProvider<AppSettingsNotifier, AsyncValue<AppSettings>> appSettingsProvider =
     StateNotifierProvider<AppSettingsNotifier, AsyncValue<AppSettings>>(
   (Ref ref) => AppSettingsNotifier(ref.watch(settingsRepositoryProvider)),
+);
+
+/// 구독(광고 제거) 활성 — [AppSettings.isSubscribed] / [AppSettings.removeAds].
+final Provider<bool> isSubscribedProvider = Provider<bool>(
+  (Ref ref) => ref.watch(appSettingsProvider).valueOrNull?.isSubscribed ?? false,
 );

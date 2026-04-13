@@ -60,7 +60,7 @@ class SettingsPage extends ConsumerWidget {
             const _MenuTile(title: '백업 및 동기화', chevron: true),
             const _MenuTile(title: '개발자 한마디', chevron: true),
             const _MenuTile(title: '케찹의 역사', chevron: true),
-            const _MenuTile(title: '현재 버전', subtitle: '1.1.4'),
+            const _MenuTile(title: '현재 버전', subtitle: '1.1.7'),
           ],
         ),
       ),

@@ -7,6 +7,7 @@ import 'package:ketchup_flutter/src/features/diary/presentation/write_edit_page.
 import 'package:ketchup_flutter/src/features/settings/presentation/ios_font_picker_page.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/ios_one_talk_page.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/ios_password_setup_page.dart';
+import 'package:ketchup_flutter/src/features/settings/presentation/ios_remove_ads_page.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/settings_page.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart';
 
@@ -28,6 +29,7 @@ class KetchupApp extends ConsumerWidget {
         IosPasswordSetupPage.routeName: (_) => const IosPasswordSetupPage(),
         IosFontPickerPage.routeName: (_) => const IosFontPickerPage(),
         IosOneTalkPage.routeName: (_) => const IosOneTalkPage(),
+        IosRemoveAdsPage.routeName: (_) => const IosRemoveAdsPage(),
       },
       onGenerateRoute: (RouteSettings settings) {
         if (settings.name == WriteEditPage.routeName) {

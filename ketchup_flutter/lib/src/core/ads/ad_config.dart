@@ -10,15 +10,19 @@ abstract final class AdConfig {
   /// 전면 광고 노출 여부.
   static const bool enableInterstitialAds = true;
 
+  /// `AppSettings.removeAds`(구독 시 true)를 배너에 반영할지.
+  static const bool respectRemoveAdsUserPreference = true;
+
+  /// `AppSettings.removeAds`가 true일 때 저장 후 전면을 막을지.
+  static const bool applyRemoveAdsToInterstitial = true;
+
   static const String _testAndroidBanner =
       'ca-app-pub-3940256099942544/6300978111';
-  static const String _testIosBanner =
-      'ca-app-pub-3940256099942544/2934735716';
+  static const String _testIosBanner = 'ca-app-pub-3940256099942544/2934735716';
 
   static const String _prodAndroidBanner =
       'ca-app-pub-3637465572249358/1554098357';
-  static const String _prodIosBanner =
-      'ca-app-pub-3637465572249358/6614853349';
+  static const String _prodIosBanner = 'ca-app-pub-3637465572249358/6614853349';
   static const String _testAndroidInterstitial =
       'ca-app-pub-3940256099942544/1033173712';
   static const String _testIosInterstitial =
@@ -48,7 +52,13 @@ abstract final class AdConfig {
   }
 
   static String? get interstitialAdUnitId {
-    if (kDebugMode) {
+    // 릴리스에서도 테스트 단위로 확인할 때:
+    // flutter build apk --dart-define=KETCHUP_FORCE_TEST_ADS=true
+    const bool forceTest = bool.fromEnvironment(
+      'KETCHUP_FORCE_TEST_ADS',
+      defaultValue: false,
+    );
+    if (kDebugMode || forceTest) {
       return Platform.isAndroid
           ? _testAndroidInterstitial
           : _testIosInterstitial;

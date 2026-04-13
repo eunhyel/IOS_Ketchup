@@ -17,13 +17,16 @@ import 'package:ketchup_flutter/src/core/widgets/ketchup_ios_close_title_row.dar
 import 'package:ketchup_flutter/src/core/dialogs/ketchup_ios_alert_dialog.dart';
 import 'package:ketchup_flutter/src/core/platform/icloud_day_sync_bridge.dart';
 import 'package:ketchup_flutter/src/core/storage/isar_provider.dart';
+import 'package:ketchup_flutter/src/features/backup/data/diary_pdf_export_service.dart';
 import 'package:ketchup_flutter/src/features/backup/data/ketchup_drive_service.dart';
 import 'package:ketchup_flutter/src/features/backup/presentation/backup_providers.dart';
 import 'package:ketchup_flutter/src/features/diary/data/diary_local_provider.dart';
+import 'package:ketchup_flutter/src/features/diary/domain/diary_entry.dart';
 import 'package:ketchup_flutter/src/features/diary/presentation/diary_providers.dart';
 import 'package:ketchup_flutter/src/features/settings/domain/app_settings.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart';
 import 'package:lottie/lottie.dart';
+import 'package:share_plus/share_plus.dart';
 
 class BackupPage extends ConsumerStatefulWidget {
   const BackupPage({super.key});
@@ -39,6 +42,8 @@ class _BackupPageState extends ConsumerState<BackupPage> {
   bool _icloudPushing = false;
   int _icloudPushDone = 0;
   int _icloudPushTotal = 0;
+  int _pdfExportDone = 0;
+  int _pdfExportTotal = 0;
 
   @override
   void initState() {
@@ -77,7 +82,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
   @override
   Widget build(BuildContext context) {
     final AsyncValue<User?> userAsync = ref.watch(firebaseUserProvider);
-    final AsyncValue<AppSettings> settingsAsync = ref.watch(appSettingsProvider);
+    final AsyncValue<AppSettings> settingsAsync = ref.watch(
+      appSettingsProvider,
+    );
     final bool icloudSync = settingsAsync.valueOrNull?.useIcloudSync ?? false;
 
     final double w = MediaQuery.sizeOf(context).width;
@@ -91,61 +98,73 @@ class _BackupPageState extends ConsumerState<BackupPage> {
         }
       },
       child: Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage(KetchupIosAssets.bgPattern),
-            repeat: ImageRepeat.repeat,
-            fit: BoxFit.none,
-            alignment: Alignment.topLeft,
-          ),
-        ),
-        child: Stack(
-          children: <Widget>[
-            SafeArea(
-              child: _buildAuthBody(
-                userAsync: userAsync,
-                scale: scale,
-                icloudSync: icloudSync,
-              ),
+        backgroundColor: Colors.transparent,
+        body: Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage(KetchupIosAssets.bgPattern),
+              repeat: ImageRepeat.repeat,
+              fit: BoxFit.none,
+              alignment: Alignment.topLeft,
             ),
-            if (_busy)
-              ColoredBox(
-                color: const Color(0x66000000),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      SizedBox(
-                        width: 140,
-                        height: 140,
-                        child: Lottie.asset(
-                          '${KetchupIosAssets.root}/ani_catchop_loader.json',
-                          repeat: true,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      if (_icloudPushing && _icloudPushTotal > 0)
-                        Padding(
-                          padding: EdgeInsets.only(top: 10 * scale),
-                          child: Text(
-                            '$_icloudPushDone/$_icloudPushTotal',
-                            style: TextStyle(
-                              fontSize: 16 * scale,
-                              color: const Color(0xFFEAEAEA),
-                              fontWeight: ketchupContentWeight(context),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
+          ),
+          child: Stack(
+            children: <Widget>[
+              SafeArea(
+                child: _buildAuthBody(
+                  userAsync: userAsync,
+                  scale: scale,
+                  icloudSync: icloudSync,
                 ),
               ),
-          ],
+              if (_busy)
+                ColoredBox(
+                  color: const Color(0x66000000),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        SizedBox(
+                          width: 140,
+                          height: 140,
+                          child: Lottie.asset(
+                            '${KetchupIosAssets.root}/ani_catchop_loader.json',
+                            repeat: true,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        if (_icloudPushing && _icloudPushTotal > 0)
+                          Padding(
+                            padding: EdgeInsets.only(top: 10 * scale),
+                            child: Text(
+                              '$_icloudPushDone/$_icloudPushTotal',
+                              style: TextStyle(
+                                fontSize: 16 * scale,
+                                color: const Color(0xFFEAEAEA),
+                                fontWeight: ketchupContentWeight(context),
+                              ),
+                            ),
+                          ),
+                        if (_pdfExportTotal > 0)
+                          Padding(
+                            padding: EdgeInsets.only(top: 10 * scale),
+                            child: Text(
+                              '$_pdfExportDone/$_pdfExportTotal',
+                              style: TextStyle(
+                                fontSize: 16 * scale,
+                                color: const Color(0xFFEAEAEA),
+                                fontWeight: ketchupContentWeight(context),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -155,8 +174,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     required double scale,
     required bool icloudSync,
   }) {
-    final User? fromFirebase =
-        Firebase.apps.isEmpty ? null : ref.read(firebaseAuthProvider).currentUser;
+    final User? fromFirebase = Firebase.apps.isEmpty
+        ? null
+        : ref.read(firebaseAuthProvider).currentUser;
     final User? user = userAsync.valueOrNull ?? fromFirebase;
 
     return userAsync.when(
@@ -259,9 +279,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
           top: 350 * scale,
           width: 294 * scale,
           height: 1.0,
-          child: Container(
-            color: Colors.black.withValues(alpha: 0.7),
-          ),
+          child: Container(color: Colors.black.withValues(alpha: 0.7)),
         ),
         // 백업 / 복원 (iOS: img-btn-bg, 기존 85·214pt 간격과 동일하게 가운데 정렬)
         Positioned(
@@ -377,33 +395,21 @@ class _BackupPageState extends ConsumerState<BackupPage> {
         Positioned(
           right: 16 * scale,
           bottom: 8 * scale,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: _busy ? null : _resetSyncData,
-              borderRadius: BorderRadius.circular(4 * scale),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 6 * scale,
-                  vertical: 4 * scale,
-                ),
-                child: Text(
-                  '초기화',
-                  style: TextStyle(
-                    fontSize: 12.5 * scale,
-                    height: 1.2,
-                    color: _busy
-                        ? const Color(0xFF303030).withValues(alpha: 0.38)
-                        : const Color(0xFF5C5C5C),
-                    decoration: TextDecoration.underline,
-                    decorationColor: _busy
-                        ? const Color(0xFF303030).withValues(alpha: 0.38)
-                        : const Color(0xFF5C5C5C),
-                    fontWeight: ketchupContentWeight(context),
-                  ),
-                ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _backupFooterLink(
+                scale: scale,
+                label: 'PDF저장',
+                onTap: _busy ? null : _exportDiaryPdf,
               ),
-            ),
+              SizedBox(width: 12 * scale),
+              _backupFooterLink(
+                scale: scale,
+                label: '초기화',
+                onTap: _busy ? null : _resetSyncData,
+              ),
+            ],
           ),
         ),
       ],
@@ -437,14 +443,17 @@ class _BackupPageState extends ConsumerState<BackupPage> {
         await ref.read(appSettingsProvider.notifier).setUseIcloudSync(true);
         await () async {
           // 재설치 복원: 로컬이 비어 있을 때만 iCloud에서 채움. 이미 일기가 있으면 전부 CloudKit에 올림.
-          final bool hasLocal =
-              await ref.read(diaryEntriesProvider.notifier).hasAnyLocalEntries();
+          final bool hasLocal = await ref
+              .read(diaryEntriesProvider.notifier)
+              .hasAnyLocalEntries();
           if (!hasLocal) {
-            final IcloudHydrationStats stats =
-                await ref.read(diaryEntriesProvider.notifier).hydrateFromIcloudWithoutGoogle();
+            final IcloudHydrationStats stats = await ref
+                .read(diaryEntriesProvider.notifier)
+                .hydrateFromIcloudWithoutGoogle();
             if (mounted) {
               if (stats.fetchedRows == 0) {
-                final Map<String, dynamic> diag = await IcloudDaySyncBridge.debugStatus();
+                final Map<String, dynamic> diag =
+                    await IcloudDaySyncBridge.debugStatus();
                 _toast(
                   'iCloud에서 일기 레코드를 찾지 못했습니다(0건).\n'
                   'Apple ID·iCloud Drive·앱용 iCloud가 켜져 있는지 확인해 주세요.\n'
@@ -469,7 +478,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
               _icloudPushDone = 0;
               _icloudPushTotal = 0;
             });
-            await ref.read(diaryEntriesProvider.notifier).icloudPushAllLocal(
+            await ref
+                .read(diaryEntriesProvider.notifier)
+                .icloudPushAllLocal(
                   onProgress: (int current, int total) {
                     if (!mounted) {
                       return;
@@ -478,7 +489,8 @@ class _BackupPageState extends ConsumerState<BackupPage> {
                       return;
                     }
                     // 1건마다 rebuild 하면 부담될 수 있어 5개 단위/마지막에만 갱신합니다.
-                    final bool shouldUpdate = current == 0 ||
+                    final bool shouldUpdate =
+                        current == 0 ||
                         current == total ||
                         (current - lastUiUpdateDone) >= 5;
                     if (!shouldUpdate) {
@@ -570,13 +582,18 @@ class _BackupPageState extends ConsumerState<BackupPage> {
 
   Future<void> _clearRemoteDiaryEntriesInBackground(String uid) async {
     try {
-      final CollectionReference<Map<String, dynamic>> col =
-          FirebaseFirestore.instance.collection('users').doc(uid).collection('diary_entries');
+      final CollectionReference<Map<String, dynamic>> col = FirebaseFirestore
+          .instance
+          .collection('users')
+          .doc(uid)
+          .collection('diary_entries');
 
       // Firestore 배치는 500개 제한이 있어 페이지 단위로 지웁니다.
       while (true) {
-        final QuerySnapshot<Map<String, dynamic>> snap =
-            await col.limit(450).get().timeout(const Duration(seconds: 6));
+        final QuerySnapshot<Map<String, dynamic>> snap = await col
+            .limit(450)
+            .get()
+            .timeout(const Duration(seconds: 6));
         if (snap.docs.isEmpty) {
           break;
         }
@@ -693,7 +710,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
   /// iOS BackUpView `ensureGoogleDriveAuthorized` 와 동일: Drive 스코프가 없으면 추가 동의 요청.
   Future<bool> _ensureDriveScope() async {
     final GoogleSignIn gs = ref.read(googleSignInProvider);
-    const List<String> scopes = <String>['https://www.googleapis.com/auth/drive'];
+    const List<String> scopes = <String>[
+      'https://www.googleapis.com/auth/drive',
+    ];
 
     // 이미 인증된 클라이언트가 있으면 권한이 살아있는 상태로 간주합니다.
     var authClient = await gs.authenticatedClient();
@@ -763,8 +782,13 @@ class _BackupPageState extends ConsumerState<BackupPage> {
       if (api == null) {
         return;
       }
-      final bytes = await ref.read(isarControllerProvider.notifier).exportCompactedBytes();
-      const String appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '1.1.4');
+      final bytes = await ref
+          .read(isarControllerProvider.notifier)
+          .exportCompactedBytes();
+      const String appVersion = String.fromEnvironment(
+        'APP_VERSION',
+        defaultValue: '1.1.7',
+      );
       await KetchupDriveService(api).backupIsar(
         isarBytes: bytes,
         appVersion: appVersion,
@@ -840,6 +864,109 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     }
   }
 
+  Future<void> _exportDiaryPdf() async {
+    if (_busy) {
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _pdfExportDone = 0;
+      _pdfExportTotal = 0;
+    });
+    try {
+      final List<DiaryEntry> entries = await ref
+          .read(diaryRepositoryProvider)
+          .fetchAll();
+      if (!mounted) {
+        return;
+      }
+      if (entries.isEmpty) {
+        _toast('저장할 일기가 없습니다.');
+        return;
+      }
+      setState(() {
+        _pdfExportTotal = entries.length;
+        _pdfExportDone = 0;
+      });
+      final File? file = await DiaryPdfExportService.exportToPdf(
+        context: context,
+        entries: entries,
+        onProgress: (int completed, int total) {
+          if (!mounted) {
+            return;
+          }
+          setState(() {
+            _pdfExportDone = completed;
+            _pdfExportTotal = total;
+          });
+        },
+      );
+      if (!mounted) {
+        return;
+      }
+      if (file == null) {
+        _toast('PDF를 만들 수 없습니다.');
+        return;
+      }
+      final RenderBox? box = context.findRenderObject() as RenderBox?;
+      final Rect? shareOrigin = box == null
+          ? null
+          : box.localToGlobal(Offset.zero) & box.size;
+      await Share.shareXFiles(<XFile>[
+        XFile(file.path),
+      ], sharePositionOrigin: shareOrigin);
+    } catch (e) {
+      if (mounted) {
+        _toast('PDF 저장·공유 실패: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _pdfExportDone = 0;
+          _pdfExportTotal = 0;
+        });
+      }
+    }
+  }
+
+  /// 하단 `PDF저장`·`초기화` 공통: 밑줄 텍스트 링크.
+  Widget _backupFooterLink({
+    required double scale,
+    required String label,
+    required VoidCallback? onTap,
+  }) {
+    final bool disabled = onTap == null;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4 * scale),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: 6 * scale,
+            vertical: 4 * scale,
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.5 * scale,
+              height: 1.2,
+              color: disabled
+                  ? const Color(0xFF303030).withValues(alpha: 0.38)
+                  : const Color(0xFF5C5C5C),
+              decoration: TextDecoration.underline,
+              decorationColor: disabled
+                  ? const Color(0xFF303030).withValues(alpha: 0.38)
+                  : const Color(0xFF5C5C5C),
+              fontWeight: ketchupContentWeight(context),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _toast(String msg) {
     if (!context.mounted) {
       return;
@@ -849,7 +976,11 @@ class _BackupPageState extends ConsumerState<BackupPage> {
 }
 
 class _ImgBtn extends StatelessWidget {
-  const _ImgBtn({required this.title, required this.enabled, required this.onTap});
+  const _ImgBtn({
+    required this.title,
+    required this.enabled,
+    required this.onTap,
+  });
 
   final String title;
   final bool enabled;
@@ -871,7 +1002,11 @@ class _ImgBtn extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             title,
-            style: TextStyle(fontSize: 16, color: const Color(0xFF303030), fontWeight: ketchupContentWeight(context)),
+            style: TextStyle(
+              fontSize: 16,
+              color: const Color(0xFF303030),
+              fontWeight: ketchupContentWeight(context),
+            ),
           ),
         ),
       ),
@@ -880,7 +1015,11 @@ class _ImgBtn extends StatelessWidget {
 }
 
 class _ToggleBtn extends StatelessWidget {
-  const _ToggleBtn({required this.text, required this.enabled, required this.onTap});
+  const _ToggleBtn({
+    required this.text,
+    required this.enabled,
+    required this.onTap,
+  });
 
   final String text;
   final bool enabled;
@@ -902,7 +1041,11 @@ class _ToggleBtn extends StatelessWidget {
           alignment: Alignment.center,
           child: Text(
             text,
-            style: TextStyle(fontSize: 16, color: const Color(0xFF303030), fontWeight: ketchupContentWeight(context)),
+            style: TextStyle(
+              fontSize: 16,
+              color: const Color(0xFF303030),
+              fontWeight: ketchupContentWeight(context),
+            ),
           ),
         ),
       ),

@@ -74,3 +74,13 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    implementation("com.android.billingclient:billing:7.0.0")
+}
+
+configurations.configureEach {
+    resolutionStrategy {
+        force("com.android.billingclient:billing:7.0.0")
+    }
+}

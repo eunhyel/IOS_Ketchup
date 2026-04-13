@@ -148,6 +148,7 @@ class _FakeSettingsRepository implements SettingsRepository {
     useCloudSync: false,
     useIcloudSync: false,
     blockRemoteDiaryRestore: false,
+    removeAds: false,
   );
 
   @override
@@ -183,6 +184,12 @@ class _FakeSettingsRepository implements SettingsRepository {
   @override
   Future<AppSettings> setBlockRemoteDiaryRestore(bool enabled) async {
     _settings = _settings.copyWith(blockRemoteDiaryRestore: enabled);
+    return _settings;
+  }
+
+  @override
+  Future<AppSettings> setRemoveAds(bool enabled) async {
+    _settings = _settings.copyWith(removeAds: enabled);
     return _settings;
   }
 }

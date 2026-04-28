@@ -9,7 +9,8 @@ import 'package:ketchup_flutter/src/features/settings/domain/app_settings.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart';
 
 /// 메인 등 하단 고정 배너용 AdMob 슬롯 (Android / iOS만).
-/// [AdConfig.respectRemoveAdsUserPreference]가 true일 때만 [AppSettings.removeAds]를 반영합니다.
+/// [AdConfig.respectRemoveAdsUserPreference]가 true일 때만
+/// [AppSettings.removeAdsSubscriptionActive]를 반영합니다.
 class KetchupBannerAdSlot extends ConsumerWidget {
   const KetchupBannerAdSlot({super.key});
 
@@ -18,7 +19,8 @@ class KetchupBannerAdSlot extends ConsumerWidget {
     if (AdConfig.respectRemoveAdsUserPreference) {
       final bool removeAds = ref.watch(
         appSettingsProvider.select(
-          (AsyncValue<AppSettings> s) => s.valueOrNull?.removeAds ?? false,
+          (AsyncValue<AppSettings> s) =>
+              s.valueOrNull?.removeAdsSubscriptionActive ?? false,
         ),
       );
       if (removeAds) {

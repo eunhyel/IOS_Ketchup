@@ -11,7 +11,9 @@ class SettingsLocalDataSource {
   Future<AppSettings> load() async {
     final IsarAppSettings? stored = await _isar.isarAppSettings.get(1);
     if (stored != null) {
-      return stored.toDomain();
+      AppSettings domain = stored.toDomain();
+      domain = await _migrateLegacyRemoveAdsSwitch(domain);
+      return domain;
     }
     await save(AppSettings.emptyDatabaseDefaults);
     return AppSettings.emptyDatabaseDefaults;
@@ -21,9 +23,32 @@ class SettingsLocalDataSource {
   AppSettings loadSync() {
     final IsarAppSettings? stored = _isar.isarAppSettings.getSync(1);
     if (stored != null) {
-      return stored.toDomain();
+      AppSettings domain = stored.toDomain();
+      domain = _migrateLegacyRemoveAdsSwitchSync(domain);
+      return domain;
     }
     return AppSettings.emptyDatabaseDefaults;
+  }
+
+  /// 예전 설정 스위치만으로 `removeAds`가 켜진 경우 — 구독 플래그 없으면 광고 제거로 보지 않습니다.
+  Future<AppSettings> _migrateLegacyRemoveAdsSwitch(AppSettings domain) async {
+    if (!domain.removeAds || domain.removeAdsSubscriptionActive) {
+      return domain;
+    }
+    final AppSettings cleared = domain.copyWith(removeAds: false);
+    await save(cleared);
+    return cleared;
+  }
+
+  AppSettings _migrateLegacyRemoveAdsSwitchSync(AppSettings domain) {
+    if (!domain.removeAds || domain.removeAdsSubscriptionActive) {
+      return domain;
+    }
+    final AppSettings cleared = domain.copyWith(removeAds: false);
+    _isar.writeTxnSync(() {
+      _isar.isarAppSettings.putSync(IsarAppSettings.fromDomain(cleared));
+    });
+    return cleared;
   }
 
   Future<void> save(AppSettings settings) async {
@@ -51,6 +76,7 @@ class SettingsLocalDataSource {
           useIcloudSync: false,
           blockRemoteDiaryRestore: false,
           removeAds: false,
+          removeAdsSubscriptionActive: false,
         ),
       );
       return;

@@ -32,17 +32,22 @@ const IsarAppSettingsSchema = CollectionSchema(
       name: r'removeAds',
       type: IsarType.bool,
     ),
-    r'useCloudSync': PropertySchema(
+    r'removeAdsSubscriptionActive': PropertySchema(
       id: 3,
+      name: r'removeAdsSubscriptionActive',
+      type: IsarType.bool,
+    ),
+    r'useCloudSync': PropertySchema(
+      id: 4,
       name: r'useCloudSync',
       type: IsarType.bool,
     ),
     r'useIcloudSync': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'useIcloudSync',
       type: IsarType.bool,
     ),
-    r'useLock': PropertySchema(id: 5, name: r'useLock', type: IsarType.bool),
+    r'useLock': PropertySchema(id: 6, name: r'useLock', type: IsarType.bool),
   },
 
   estimateSize: _isarAppSettingsEstimateSize,
@@ -79,9 +84,10 @@ void _isarAppSettingsSerialize(
   writer.writeBool(offsets[0], object.blockRemoteDiaryRestore);
   writer.writeString(offsets[1], object.fontName);
   writer.writeBool(offsets[2], object.removeAds);
-  writer.writeBool(offsets[3], object.useCloudSync);
-  writer.writeBool(offsets[4], object.useIcloudSync);
-  writer.writeBool(offsets[5], object.useLock);
+  writer.writeBool(offsets[3], object.removeAdsSubscriptionActive);
+  writer.writeBool(offsets[4], object.useCloudSync);
+  writer.writeBool(offsets[5], object.useIcloudSync);
+  writer.writeBool(offsets[6], object.useLock);
 }
 
 IsarAppSettings _isarAppSettingsDeserialize(
@@ -95,9 +101,10 @@ IsarAppSettings _isarAppSettingsDeserialize(
   object.fontName = reader.readString(offsets[1]);
   object.id = id;
   object.removeAds = reader.readBoolOrNull(offsets[2]);
-  object.useCloudSync = reader.readBoolOrNull(offsets[3]);
-  object.useIcloudSync = reader.readBoolOrNull(offsets[4]);
-  object.useLock = reader.readBool(offsets[5]);
+  object.removeAdsSubscriptionActive = reader.readBoolOrNull(offsets[3]);
+  object.useCloudSync = reader.readBoolOrNull(offsets[4]);
+  object.useIcloudSync = reader.readBoolOrNull(offsets[5]);
+  object.useLock = reader.readBool(offsets[6]);
   return object;
 }
 
@@ -119,6 +126,8 @@ P _isarAppSettingsDeserializeProp<P>(
     case 4:
       return (reader.readBoolOrNull(offset)) as P;
     case 5:
+      return (reader.readBoolOrNull(offset)) as P;
+    case 6:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -478,6 +487,38 @@ extension IsarAppSettingsQueryFilter
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
+  removeAdsSubscriptionActiveIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'removeAdsSubscriptionActive'),
+      );
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
+  removeAdsSubscriptionActiveIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(
+          property: r'removeAdsSubscriptionActive',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
+  removeAdsSubscriptionActiveEqualTo(bool? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'removeAdsSubscriptionActive',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterFilterCondition>
   useCloudSyncIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -592,6 +633,20 @@ extension IsarAppSettingsQuerySortBy
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+  sortByRemoveAdsSubscriptionActive() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'removeAdsSubscriptionActive', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+  sortByRemoveAdsSubscriptionActiveDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'removeAdsSubscriptionActive', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
   sortByUseCloudSync() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useCloudSync', Sort.asc);
@@ -690,6 +745,20 @@ extension IsarAppSettingsQuerySortThenBy
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+  thenByRemoveAdsSubscriptionActive() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'removeAdsSubscriptionActive', Sort.asc);
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
+  thenByRemoveAdsSubscriptionActiveDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'removeAdsSubscriptionActive', Sort.desc);
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QAfterSortBy>
   thenByUseCloudSync() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useCloudSync', Sort.asc);
@@ -756,6 +825,13 @@ extension IsarAppSettingsQueryWhereDistinct
   }
 
   QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct>
+  distinctByRemoveAdsSubscriptionActive() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'removeAdsSubscriptionActive');
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, IsarAppSettings, QDistinct>
   distinctByUseCloudSync() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'useCloudSync');
@@ -801,6 +877,13 @@ extension IsarAppSettingsQueryProperty
   QueryBuilder<IsarAppSettings, bool?, QQueryOperations> removeAdsProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'removeAds');
+    });
+  }
+
+  QueryBuilder<IsarAppSettings, bool?, QQueryOperations>
+  removeAdsSubscriptionActiveProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'removeAdsSubscriptionActive');
     });
   }
 

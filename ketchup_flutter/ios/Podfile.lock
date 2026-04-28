@@ -1453,7 +1453,7 @@ DEPENDENCIES:
   - webview_flutter_wkwebview (from `.symlinks/plugins/webview_flutter_wkwebview/darwin`)
 
 SPEC REPOS:
-  https://github.com/CocoaPods/Specs.git:
+  trunk:
     - abseil
     - AppAuth
     - AppCheckCore
@@ -1554,6 +1554,6 @@ SPEC CHECKSUMS:
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
 
-PODFILE CHECKSUM: 4b750c623bd379feaccac56a99d60ee6471a15c9
+PODFILE CHECKSUM: fb8cd951b03bcf01e922f22122f19d55ccc1f74c
 
 COCOAPODS: 1.16.2

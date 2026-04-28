@@ -74,6 +74,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
   bool _ensureWriteFieldVisibleScheduled = false;
   Timer? _draftSaveTimer;
   bool _suppressDraftPersistence = false;
+  bool _saveInFlight = false;
   String _lastAcceptedText = '';
   bool _applyingLineLimitRollback = false;
   bool _lineLimitDialogOpen = false;
@@ -117,6 +118,9 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
     _textController.addListener(_onTextChanged);
     if (_mode == WriteEditMode.create) {
       unawaited(_tryLoadComposeDraft());
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        KetchupInterstitialAd.preloadForSaveFlow();
+      });
     }
   }
 
@@ -291,6 +295,9 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
 
   @override
   void dispose() {
+    if (_mode == WriteEditMode.create) {
+      KetchupInterstitialAd.discardPreloadedIfAny();
+    }
     WidgetsBinding.instance.removeObserver(this);
     _draftSaveTimer?.cancel();
     _textController.removeListener(_onTextChanged);
@@ -1042,8 +1049,21 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
   }
 
   Future<void> _save() async {
+    if (_saveInFlight) {
+      return;
+    }
+    _saveInFlight = true;
+    try {
+      await _saveImpl();
+    } finally {
+      _saveInFlight = false;
+    }
+  }
+
+  Future<void> _saveImpl() async {
     final bool removeAds =
-        ref.read(appSettingsProvider).valueOrNull?.removeAds ?? false;
+        ref.read(appSettingsProvider).valueOrNull?.removeAdsSubscriptionActive ??
+        false;
     if (_mode == WriteEditMode.edit) {
       if (!_isDirty) {
         if (mounted) {

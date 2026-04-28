@@ -53,7 +53,7 @@ class _IosSettingsPanelBody extends ConsumerWidget {
     '암호 설정',
     '백업 및 동기화',
     '글씨체 변경',
-    '광고 제거',
+    '광고 제거 구독',
     '개발자 한마디',
     '현재 버전',
   ];
@@ -61,7 +61,7 @@ class _IosSettingsPanelBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final double h = MediaQuery.sizeOf(context).height;
-    const String version = '1.1.7';
+    const String version = '1.1.8';
 
     return Material(
       color: Colors.transparent,
@@ -175,7 +175,7 @@ class _IosSettingsPanelBody extends ConsumerWidget {
       case 5:
         ScaffoldMessenger.of(
           shellContext,
-        ).showSnackBar(const SnackBar(content: Text('현재 버전: 1.1.7')));
+        ).showSnackBar(const SnackBar(content: Text('현재 버전: 1.1.8')));
         break;
       default:
         break;

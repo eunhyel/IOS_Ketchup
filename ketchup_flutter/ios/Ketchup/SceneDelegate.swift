@@ -6,6 +6,7 @@ import UIKit
 
 private enum FlutterNativeChannelsSetup {
   static var done = false
+  static var pluginsRegistered = false
 }
 
 /// Meta(Instagram) 스토리 스티커 공유: 2023년 이후 반드시
@@ -82,6 +83,11 @@ class SceneDelegate: FlutterSceneDelegate {
     guard let windowScene = scene as? UIWindowScene else { return false }
     guard let root = windowScene.windows.first?.rootViewController as? FlutterViewController else {
       return false
+    }
+    if !FlutterNativeChannelsSetup.pluginsRegistered {
+      // Register plugins on the same engine bound to the visible FlutterViewController.
+      GeneratedPluginRegistrant.register(with: root.engine)
+      FlutterNativeChannelsSetup.pluginsRegistered = true
     }
     FlutterNativeChannelsSetup.done = true
     let messenger = root.engine.binaryMessenger

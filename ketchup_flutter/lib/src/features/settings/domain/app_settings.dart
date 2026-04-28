@@ -6,6 +6,7 @@ class AppSettings {
     this.useIcloudSync = false,
     this.blockRemoteDiaryRestore = false,
     this.removeAds = false,
+    this.removeAdsSubscriptionActive = false,
   });
 
   /// Isar에 설정 행이 없을 때 [SettingsLocalDataSource.load]가 저장하는 값과 동일합니다.
@@ -17,6 +18,7 @@ class AppSettings {
     useIcloudSync: false,
     blockRemoteDiaryRestore: false,
     removeAds: false,
+    removeAdsSubscriptionActive: false,
   );
 
   final bool useLock;
@@ -31,11 +33,14 @@ class AppSettings {
   /// 백업 화면 「초기화」(로컬만 삭제) 후, 앱 재실행 시에도 Firestore/iCloud로 일기를 다시 채우지 않음. 로그아웃 시 false로 돌림.
   final bool blockRemoteDiaryRestore;
 
-  /// true이면 배너 광고를 끕니다.
+  /// 레거시 스위치·백업 호환용. 광고 숨김은 [removeAdsSubscriptionActive]만 따릅니다.
   final bool removeAds;
 
-  /// 구독(또는 광고 제거 구매) 활성 여부 — [removeAds]와 동일합니다.
-  bool get isSubscribed => removeAds;
+  /// 스토어 구독(구매·복원)으로 광고 제거가 켜졌을 때만 true.
+  final bool removeAdsSubscriptionActive;
+
+  /// 스토어 구독 활성 — 레거시 `removeAds` 스위치만 켠 경우는 false입니다.
+  bool get isSubscribed => removeAdsSubscriptionActive;
 
   AppSettings copyWith({
     bool? useLock,
@@ -44,6 +49,7 @@ class AppSettings {
     bool? useIcloudSync,
     bool? blockRemoteDiaryRestore,
     bool? removeAds,
+    bool? removeAdsSubscriptionActive,
   }) {
     return AppSettings(
       useLock: useLock ?? this.useLock,
@@ -52,6 +58,8 @@ class AppSettings {
       useIcloudSync: useIcloudSync ?? this.useIcloudSync,
       blockRemoteDiaryRestore: blockRemoteDiaryRestore ?? this.blockRemoteDiaryRestore,
       removeAds: removeAds ?? this.removeAds,
+      removeAdsSubscriptionActive:
+          removeAdsSubscriptionActive ?? this.removeAdsSubscriptionActive,
     );
   }
 }

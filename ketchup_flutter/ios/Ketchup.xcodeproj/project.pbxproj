@@ -7,14 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		08C00FFAFBAEE005F1237290 /* Pods_KetchupTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0821576F8D32C56A007F85A0 /* Pods_KetchupTests.framework */; };
-		0F23C333DE388E86E3576EFE /* Pods_Ketchup.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 161082CA8EE420978B90DE53 /* Pods_Ketchup.framework */; };
 		1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */ = {isa = PBXBuildFile; fileRef = 1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */; };
 		331C808B294A63AB00263BE5 /* KetchupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C807B294A618700263BE5 /* KetchupTests.swift */; };
 		3B3967161E833CAA004F5970 /* AppFrameworkInfo.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */; };
+		5D7FEE7861D907771DBB3DAC /* Pods_KetchupTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DF90C8E443D755CC27ECC5FA /* Pods_KetchupTests.framework */; };
+		668C4A5E0C09DAE04E1A6CE6 /* Pods_Ketchup.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69F8DD2D4C8F4CA45F35A76C /* Pods_Ketchup.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
 		7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */; };
-		88E237CD2F8C7325009062B0 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88E237CC2F8C7325009062B0 /* StoreKit.framework */; };
+		88F196862FA076FB003BF54F /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 88F196852FA076FB003BF54F /* StoreKit.framework */; };
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
@@ -45,27 +45,25 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		0821576F8D32C56A007F85A0 /* Pods_KetchupTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_KetchupTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		031D7747B8D7D8A4E06F7750 /* Pods-Ketchup.profile-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.profile-ketchup.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.profile-ketchup.xcconfig"; sourceTree = "<group>"; };
 		1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = GeneratedPluginRegistrant.h; sourceTree = "<group>"; };
 		1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GeneratedPluginRegistrant.m; sourceTree = "<group>"; };
-		161082CA8EE420978B90DE53 /* Pods_Ketchup.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Ketchup.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		1745879389E9EC1640D03369 /* Pods-KetchupTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.debug.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.debug.xcconfig"; sourceTree = "<group>"; };
+		1C63B745AA0C9967EA505CCF /* Pods-KetchupTests.debug-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.debug-ketchup.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.debug-ketchup.xcconfig"; sourceTree = "<group>"; };
+		1EB4FAAFC82EE9B977465FAD /* Pods-KetchupTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.debug.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.debug.xcconfig"; sourceTree = "<group>"; };
 		331C807B294A618700263BE5 /* KetchupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KetchupTests.swift; sourceTree = "<group>"; };
 		331C8081294A63A400263BE5 /* KetchupTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = KetchupTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B3967151E833CAA004F5970 /* AppFrameworkInfo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = AppFrameworkInfo.plist; path = Flutter/AppFrameworkInfo.plist; sourceTree = "<group>"; };
-		3F1089EB4649A0D7E5E10980 /* Pods-Ketchup.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.profile.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.profile.xcconfig"; sourceTree = "<group>"; };
-		53D63F0B38105BEF5B443F61 /* Pods-KetchupTests.profile-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.profile-ketchup.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.profile-ketchup.xcconfig"; sourceTree = "<group>"; };
-		70B5C081613FE7C2389EFFC5 /* Pods-KetchupTests.debug-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.debug-ketchup.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.debug-ketchup.xcconfig"; sourceTree = "<group>"; };
+		69F8DD2D4C8F4CA45F35A76C /* Pods_Ketchup.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Ketchup.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		6B8D1A155DCE69A91EA3C084 /* Pods-Ketchup.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.profile.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.profile.xcconfig"; sourceTree = "<group>"; };
+		6C7CFCAD266CC1D1898BCED2 /* Pods-KetchupTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.profile.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.profile.xcconfig"; sourceTree = "<group>"; };
 		74858FAD1ED2DC5600515810 /* Ketchup-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Ketchup-Bridging-Header.h"; sourceTree = "<group>"; };
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		78A252C58D682455A115CC8E /* Pods-Ketchup.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.release.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.release.xcconfig"; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
-		7F46A8DBD2EAD894CBF6EFCE /* Pods-KetchupTests.release-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.release-ketchup.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.release-ketchup.xcconfig"; sourceTree = "<group>"; };
+		7D506DFFC03B6E98BC214333 /* Pods-Ketchup.release-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.release-ketchup.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.release-ketchup.xcconfig"; sourceTree = "<group>"; };
 		884C60E02F7118050064129C /* Ketchup.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Ketchup.entitlements; sourceTree = "<group>"; };
-		88E237CC2F8C7325009062B0 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
-		8B56F1683C01C06A42E4D7A4 /* Pods-Ketchup.release-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.release-ketchup.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.release-ketchup.xcconfig"; sourceTree = "<group>"; };
-		92BA1D39C7982A64AD4657FF /* Pods-Ketchup.profile-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.profile-ketchup.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.profile-ketchup.xcconfig"; sourceTree = "<group>"; };
+		88F196852FA076FB003BF54F /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		8A2C0898F2BED6D461EF8E26 /* Pods-KetchupTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.release.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.release.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
 		9740EEB31CF90195004384FC /* Generated.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Generated.xcconfig; path = Flutter/Generated.xcconfig; sourceTree = "<group>"; };
 		97C146EE1CF9000F007C117D /* Ketchup.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Ketchup.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -74,10 +72,12 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C3D4E5F60718293A4B5D /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		BD4B505623131EA0664E6FEC /* Pods-Ketchup.debug-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.debug-ketchup.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.debug-ketchup.xcconfig"; sourceTree = "<group>"; };
-		C685766EB49683AEC7286BCE /* Pods-KetchupTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.profile.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.profile.xcconfig"; sourceTree = "<group>"; };
-		CD688BE92FEE1951FF71DC42 /* Pods-Ketchup.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.debug.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.debug.xcconfig"; sourceTree = "<group>"; };
-		F78881BFAC2173A5E64739F0 /* Pods-KetchupTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.release.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.release.xcconfig"; sourceTree = "<group>"; };
+		C76C65F8E2A4ED349E18354E /* Pods-Ketchup.debug-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.debug-ketchup.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.debug-ketchup.xcconfig"; sourceTree = "<group>"; };
+		CC66572E332F9099043C8D17 /* Pods-Ketchup.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.debug.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.debug.xcconfig"; sourceTree = "<group>"; };
+		CF6D5D2FA816F4E790A5AD75 /* Pods-Ketchup.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Ketchup.release.xcconfig"; path = "Target Support Files/Pods-Ketchup/Pods-Ketchup.release.xcconfig"; sourceTree = "<group>"; };
+		DF90C8E443D755CC27ECC5FA /* Pods_KetchupTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_KetchupTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		E1FCE99697193086C508F794 /* Pods-KetchupTests.profile-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.profile-ketchup.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.profile-ketchup.xcconfig"; sourceTree = "<group>"; };
+		F9DB776D604CDD50BB62C840 /* Pods-KetchupTests.release-ketchup.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-KetchupTests.release-ketchup.xcconfig"; path = "Target Support Files/Pods-KetchupTests/Pods-KetchupTests.release-ketchup.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -85,8 +85,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0F23C333DE388E86E3576EFE /* Pods_Ketchup.framework in Frameworks */,
-				88E237CD2F8C7325009062B0 /* StoreKit.framework in Frameworks */,
+				668C4A5E0C09DAE04E1A6CE6 /* Pods_Ketchup.framework in Frameworks */,
+				88F196862FA076FB003BF54F /* StoreKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -94,7 +94,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				08C00FFAFBAEE005F1237290 /* Pods_KetchupTests.framework in Frameworks */,
+				5D7FEE7861D907771DBB3DAC /* Pods_KetchupTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,9 +112,9 @@
 		4226D4B4774C3788CF3AF39D /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				88E237CC2F8C7325009062B0 /* StoreKit.framework */,
-				0821576F8D32C56A007F85A0 /* Pods_KetchupTests.framework */,
-				161082CA8EE420978B90DE53 /* Pods_Ketchup.framework */,
+				88F196852FA076FB003BF54F /* StoreKit.framework */,
+				69F8DD2D4C8F4CA45F35A76C /* Pods_Ketchup.framework */,
+				DF90C8E443D755CC27ECC5FA /* Pods_KetchupTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -172,18 +172,18 @@
 		CB5618638243AA89814E0583 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				CD688BE92FEE1951FF71DC42 /* Pods-Ketchup.debug.xcconfig */,
-				78A252C58D682455A115CC8E /* Pods-Ketchup.release.xcconfig */,
-				3F1089EB4649A0D7E5E10980 /* Pods-Ketchup.profile.xcconfig */,
-				1745879389E9EC1640D03369 /* Pods-KetchupTests.debug.xcconfig */,
-				F78881BFAC2173A5E64739F0 /* Pods-KetchupTests.release.xcconfig */,
-				C685766EB49683AEC7286BCE /* Pods-KetchupTests.profile.xcconfig */,
-				BD4B505623131EA0664E6FEC /* Pods-Ketchup.debug-ketchup.xcconfig */,
-				8B56F1683C01C06A42E4D7A4 /* Pods-Ketchup.release-ketchup.xcconfig */,
-				92BA1D39C7982A64AD4657FF /* Pods-Ketchup.profile-ketchup.xcconfig */,
-				70B5C081613FE7C2389EFFC5 /* Pods-KetchupTests.debug-ketchup.xcconfig */,
-				7F46A8DBD2EAD894CBF6EFCE /* Pods-KetchupTests.release-ketchup.xcconfig */,
-				53D63F0B38105BEF5B443F61 /* Pods-KetchupTests.profile-ketchup.xcconfig */,
+				CC66572E332F9099043C8D17 /* Pods-Ketchup.debug.xcconfig */,
+				CF6D5D2FA816F4E790A5AD75 /* Pods-Ketchup.release.xcconfig */,
+				6B8D1A155DCE69A91EA3C084 /* Pods-Ketchup.profile.xcconfig */,
+				C76C65F8E2A4ED349E18354E /* Pods-Ketchup.debug-ketchup.xcconfig */,
+				7D506DFFC03B6E98BC214333 /* Pods-Ketchup.release-ketchup.xcconfig */,
+				031D7747B8D7D8A4E06F7750 /* Pods-Ketchup.profile-ketchup.xcconfig */,
+				1EB4FAAFC82EE9B977465FAD /* Pods-KetchupTests.debug.xcconfig */,
+				8A2C0898F2BED6D461EF8E26 /* Pods-KetchupTests.release.xcconfig */,
+				6C7CFCAD266CC1D1898BCED2 /* Pods-KetchupTests.profile.xcconfig */,
+				1C63B745AA0C9967EA505CCF /* Pods-KetchupTests.debug-ketchup.xcconfig */,
+				F9DB776D604CDD50BB62C840 /* Pods-KetchupTests.release-ketchup.xcconfig */,
+				E1FCE99697193086C508F794 /* Pods-KetchupTests.profile-ketchup.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -195,7 +195,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 331C8087294A63A400263BE5 /* Build configuration list for PBXNativeTarget "KetchupTests" */;
 			buildPhases = (
-				73168812FB4A404B76614925 /* [CP] Check Pods Manifest.lock */,
+				145C537CBB49F8C3415EDE20 /* [CP] Check Pods Manifest.lock */,
 				331C807D294A63A400263BE5 /* Sources */,
 				331C807F294A63A400263BE5 /* Resources */,
 				AFA749E56D16A7897BED6260 /* Frameworks */,
@@ -214,15 +214,15 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Ketchup" */;
 			buildPhases = (
-				D9941B25759452240182A18D /* [CP] Check Pods Manifest.lock */,
+				E19DBA5D42C682AD7046673D /* [CP] Check Pods Manifest.lock */,
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
-				DD0A4B9348312D1BDDE5B436 /* [CP] Embed Pods Frameworks */,
-				D019DC760B272453D8DDFC5F /* [CP] Copy Pods Resources */,
+				79EA31BCE5339526E029A0D4 /* [CP] Embed Pods Frameworks */,
+				CFC0EF1388BAF0CB8769D4DF /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -295,23 +295,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}",
-			);
-			name = "Thin Binary";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
-		};
-		73168812FB4A404B76614925 /* [CP] Check Pods Manifest.lock */ = {
+		145C537CBB49F8C3415EDE20 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -333,6 +317,39 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}",
+			);
+			name = "Thin Binary";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
+		};
+		79EA31BCE5339526E029A0D4 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Ketchup/Pods-Ketchup-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Ketchup/Pods-Ketchup-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Ketchup/Pods-Ketchup-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -348,7 +365,7 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
 		};
-		D019DC760B272453D8DDFC5F /* [CP] Copy Pods Resources */ = {
+		CFC0EF1388BAF0CB8769D4DF /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -365,7 +382,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Ketchup/Pods-Ketchup-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		D9941B25759452240182A18D /* [CP] Check Pods Manifest.lock */ = {
+		E19DBA5D42C682AD7046673D /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -385,23 +402,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		DD0A4B9348312D1BDDE5B436 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Ketchup/Pods-Ketchup-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Ketchup/Pods-Ketchup-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Ketchup/Pods-Ketchup-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -541,7 +541,7 @@
 		};
 		331C8088294A63A400263BE5 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1745879389E9EC1640D03369 /* Pods-KetchupTests.debug.xcconfig */;
+			baseConfigurationReference = 1EB4FAAFC82EE9B977465FAD /* Pods-KetchupTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -561,7 +561,7 @@
 		};
 		331C8089294A63A400263BE5 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = F78881BFAC2173A5E64739F0 /* Pods-KetchupTests.release.xcconfig */;
+			baseConfigurationReference = 8A2C0898F2BED6D461EF8E26 /* Pods-KetchupTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -579,7 +579,7 @@
 		};
 		331C808A294A63A400263BE5 /* Profile */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = C685766EB49683AEC7286BCE /* Pods-KetchupTests.profile.xcconfig */;
+			baseConfigurationReference = 6C7CFCAD266CC1D1898BCED2 /* Pods-KetchupTests.profile.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -1033,7 +1033,7 @@
 		};
 		D1E2F3AA1CF9000F007C117D /* Debug-Ketchup */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 70B5C081613FE7C2389EFFC5 /* Pods-KetchupTests.debug-ketchup.xcconfig */;
+			baseConfigurationReference = 1C63B745AA0C9967EA505CCF /* Pods-KetchupTests.debug-ketchup.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -1053,7 +1053,7 @@
 		};
 		D1E2F3AB1CF9000F007C117D /* Release-Ketchup */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7F46A8DBD2EAD894CBF6EFCE /* Pods-KetchupTests.release-ketchup.xcconfig */;
+			baseConfigurationReference = F9DB776D604CDD50BB62C840 /* Pods-KetchupTests.release-ketchup.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -1071,7 +1071,7 @@
 		};
 		D1E2F3AC1CF9000F007C117D /* Profile-Ketchup */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 53D63F0B38105BEF5B443F61 /* Pods-KetchupTests.profile-ketchup.xcconfig */;
+			baseConfigurationReference = E1FCE99697193086C508F794 /* Pods-KetchupTests.profile-ketchup.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;

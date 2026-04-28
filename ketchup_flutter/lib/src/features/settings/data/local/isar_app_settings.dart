@@ -21,6 +21,9 @@ class IsarAppSettings {
   /// 기존 DB 호환: 없으면 null → false.
   bool? removeAds;
 
+  /// 스토어 구독으로만 true. 없으면 null → false.
+  bool? removeAdsSubscriptionActive;
+
   AppSettings toDomain() => AppSettings(
         useLock: useLock,
         fontName: fontName,
@@ -28,6 +31,7 @@ class IsarAppSettings {
         useIcloudSync: useIcloudSync ?? false,
         blockRemoteDiaryRestore: blockRemoteDiaryRestore ?? false,
         removeAds: removeAds ?? false,
+        removeAdsSubscriptionActive: removeAdsSubscriptionActive ?? false,
       );
 
   static IsarAppSettings fromDomain(AppSettings settings) {
@@ -38,6 +42,7 @@ class IsarAppSettings {
       ..useCloudSync = settings.useCloudSync
       ..useIcloudSync = settings.useIcloudSync
       ..blockRemoteDiaryRestore = settings.blockRemoteDiaryRestore
-      ..removeAds = settings.removeAds;
+      ..removeAds = settings.removeAds
+      ..removeAdsSubscriptionActive = settings.removeAdsSubscriptionActive;
   }
 }

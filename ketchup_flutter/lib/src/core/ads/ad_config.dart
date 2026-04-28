@@ -10,10 +10,10 @@ abstract final class AdConfig {
   /// 전면 광고 노출 여부.
   static const bool enableInterstitialAds = true;
 
-  /// `AppSettings.removeAds`(구독 시 true)를 배너에 반영할지.
+  /// `AppSettings.removeAdsSubscriptionActive`를 배너에 반영할지. iOS·Android 동일.
   static const bool respectRemoveAdsUserPreference = true;
 
-  /// `AppSettings.removeAds`가 true일 때 저장 후 전면을 막을지.
+  /// `AppSettings.removeAdsSubscriptionActive`가 true일 때 저장 후 전면을 막을지. iOS·Android 동일.
   static const bool applyRemoveAdsToInterstitial = true;
 
   static const String _testAndroidBanner =

@@ -71,7 +71,9 @@ class IsarSettingsRepository implements SettingsRepository {
   @override
   Future<AppSettings> setRemoveAds(bool enabled) async {
     final AppSettings current = await _local.load();
-    final AppSettings next = current.copyWith(removeAds: enabled);
+    final AppSettings next = enabled
+        ? current.copyWith(removeAds: true, removeAdsSubscriptionActive: true)
+        : current.copyWith(removeAds: false, removeAdsSubscriptionActive: false);
     await _local.save(next);
     return next;
   }

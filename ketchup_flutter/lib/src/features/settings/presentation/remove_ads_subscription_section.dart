@@ -10,6 +10,7 @@ import 'package:ketchup_flutter/src/features/settings/data/payment_providers.dar
 import 'package:ketchup_flutter/src/features/settings/data/payment_service.dart';
 import 'package:ketchup_flutter/src/features/settings/domain/remove_ads_iap_ids.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// App Store / Play 공통 — `remove_ads_monthly` 구독으로 광고를 끕니다.
 ///
@@ -24,10 +25,22 @@ class RemoveAdsSubscriptionSection extends ConsumerStatefulWidget {
 
 class _RemoveAdsSubscriptionSectionState
     extends ConsumerState<RemoveAdsSubscriptionSection> {
+  static final Uri _removeAdsLegalUri = Uri.parse(
+    'https://www.notion.so/330c654b45c8809c860cf9167098141a?source=copy_link',
+  );
+
+  /// Apple 표준 라이선스 계약 (App Store 구독 메타데이터용).
+  static final Uri _appleStandardEulaUri = Uri.parse(
+    'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
+  );
+
   StreamSubscription<List<PurchaseDetails>>? _purchaseUiSub;
 
   bool _buying = false;
   String? _bannerMessage;
+
+  /// true: 구독 버튼을 눌렀는데 상품을 쓸 수 없을 때만 실패 문구(빨간 안내 +「상품 정보 없음」) 표시.
+  bool _showProductFetchFailureUi = false;
 
   @override
   void initState() {
@@ -118,6 +131,47 @@ class _RemoveAdsSubscriptionSectionState
     }
   }
 
+  Future<void> _launchLegalUrl(Uri uri) async {
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('링크를 열 수 없습니다.')),
+        );
+      }
+    }
+  }
+
+  TextStyle _legalLinkTextStyle(BuildContext context) {
+    return TextStyle(
+      fontSize: 13.5,
+      fontWeight: ketchupContentWeight(context),
+      color: const Color(0xFF5C5C5C),
+      decoration: TextDecoration.underline,
+      decorationColor: const Color(0xFF5C5C5C),
+    );
+  }
+
+  void _onSubscribePressed({
+    required bool loadingStore,
+    required bool isSubscribed,
+    required AsyncValue<ProductDetails?> productAsync,
+    required PaymentService payment,
+  }) {
+    if (isSubscribed || _buying || loadingStore) {
+      return;
+    }
+    final ProductDetails? product = productAsync.valueOrNull;
+    if (product == null || productAsync.hasError) {
+      setState(() {
+        _showProductFetchFailureUi = true;
+        _bannerMessage = null;
+      });
+      ref.invalidate(subscriptionStoreProductProvider);
+      return;
+    }
+    unawaited(_buy(product, payment));
+  }
+
   @override
   Widget build(BuildContext context) {
     final AsyncValue<ProductDetails?> productAsync = ref.watch(
@@ -125,6 +179,18 @@ class _RemoveAdsSubscriptionSectionState
     );
     final PaymentService payment = ref.watch(paymentServiceProvider);
     final bool isSubscribed = ref.watch(isSubscribedProvider);
+
+    ref.listen<AsyncValue<ProductDetails?>>(
+      subscriptionStoreProductProvider,
+      (AsyncValue<ProductDetails?>? previous, AsyncValue<ProductDetails?> next) {
+        if (!mounted) {
+          return;
+        }
+        if (next.valueOrNull != null && _showProductFetchFailureUi) {
+          setState(() => _showProductFetchFailureUi = false);
+        }
+      },
+    );
 
     final bool loadingStore = productAsync.isLoading;
     final ProductDetails? product = productAsync.valueOrNull;
@@ -188,7 +254,8 @@ class _RemoveAdsSubscriptionSectionState
                           ),
                         ),
                       ],
-                      if (productAsync.hasError) ...<Widget>[
+                      if (_showProductFetchFailureUi &&
+                          (productAsync.hasError || product == null)) ...<Widget>[
                         const SizedBox(height: 12),
                         Text(
                           '상품 정보를 불러오지 못했습니다.',
@@ -233,10 +300,18 @@ class _RemoveAdsSubscriptionSectionState
                         )
                       else
                         FilledButton(
-                          onPressed:
-                              (loadingStore || product == null || _buying)
+                          onPressed: (isSubscribed ||
+                                  _buying ||
+                                  loadingStore ||
+                                  (_showProductFetchFailureUi &&
+                                      (product == null || productAsync.hasError)))
                               ? null
-                              : () => unawaited(_buy(product, payment)),
+                              : () => _onSubscribePressed(
+                                    loadingStore: loadingStore,
+                                    isSubscribed: isSubscribed,
+                                    productAsync: productAsync,
+                                    payment: payment,
+                                  ),
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFFED5151),
                             foregroundColor: Colors.white,
@@ -254,16 +329,29 @@ class _RemoveAdsSubscriptionSectionState
                                     color: Colors.white,
                                   ),
                                 )
-                              : Text(
-                                  product == null
-                                      ? '상품 정보 없음'
-                                      : '광고 제거 구독하기\n${product.title} · ${product.price}',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: ketchupContentWeight(context),
-                                  ),
-                                ),
+                              : _showProductFetchFailureUi &&
+                                      (product == null ||
+                                          productAsync.hasError)
+                                  ? Text(
+                                      '상품 정보 없음',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: ketchupContentWeight(
+                                          context,
+                                        ),
+                                      ),
+                                    )
+                                  : Text(
+                                      '광고 제거 - ₩1,100/월',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: ketchupContentWeight(
+                                          context,
+                                        ),
+                                      ),
+                                    ),
                         ),
                       const SizedBox(height: 12),
                       TextButton(
@@ -277,6 +365,59 @@ class _RemoveAdsSubscriptionSectionState
                             fontWeight: ketchupContentWeight(context),
                             color: const Color(0xFF5C5C5C),
                           ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 25),
+                child: Center(
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 4,
+                    runSpacing: 6,
+                    children: <Widget>[
+                      TextButton(
+                        onPressed: () => unawaited(_launchLegalUrl(_removeAdsLegalUri)),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          '개인정보 처리방침 및 이용약관',
+                          style: _legalLinkTextStyle(context),
+                        ),
+                      ),
+                      Text(
+                        '·',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          color: const Color(0xFF5C5C5C).withValues(alpha: 0.55),
+                          height: 1,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () =>
+                            unawaited(_launchLegalUrl(_appleStandardEulaUri)),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          '이용약관(EULA)',
+                          style: _legalLinkTextStyle(context),
                         ),
                       ),
                     ],

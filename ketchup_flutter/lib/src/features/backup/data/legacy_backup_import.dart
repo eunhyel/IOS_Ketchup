@@ -54,6 +54,7 @@ class LegacyBackupImport {
           ..useIcloudSync = false
           ..blockRemoteDiaryRestore = false
           ..removeAds = false
+          ..removeAdsSubscriptionActive = false
           ..fontName = 'font_syong',
       );
     });
@@ -129,6 +130,7 @@ class LegacyBackupImport {
           ..useIcloudSync = false
           ..blockRemoteDiaryRestore = false
           ..removeAds = false
+          ..removeAdsSubscriptionActive = false
           ..fontName = 'font_syong',
       );
     });

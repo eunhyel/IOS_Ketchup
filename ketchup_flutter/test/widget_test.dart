@@ -189,7 +189,12 @@ class _FakeSettingsRepository implements SettingsRepository {
 
   @override
   Future<AppSettings> setRemoveAds(bool enabled) async {
-    _settings = _settings.copyWith(removeAds: enabled);
+    _settings = enabled
+        ? _settings.copyWith(removeAds: true, removeAdsSubscriptionActive: true)
+        : _settings.copyWith(
+            removeAds: false,
+            removeAdsSubscriptionActive: false,
+          );
     return _settings;
   }
 }

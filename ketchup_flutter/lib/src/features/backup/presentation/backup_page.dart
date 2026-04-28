@@ -647,6 +647,10 @@ class _BackupPageState extends ConsumerState<BackupPage> {
         idToken: ga.idToken,
       );
       await ref.read(firebaseAuthProvider).signInWithCredential(credential);
+      // Firebase용 토큰만 있고 Drive 스코프가 빠지는 경우가 있어, 백업 전에 동의를 받습니다.
+      await gs.requestScopes(const <String>[
+        'https://www.googleapis.com/auth/drive',
+      ]);
       if (mounted) {
         _toast('로그인되었습니다.');
       }
@@ -707,40 +711,57 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     }
   }
 
-  /// iOS BackUpView `ensureGoogleDriveAuthorized` 와 동일: Drive 스코프가 없으면 추가 동의 요청.
+  /// Drive 스코프 확보. [authenticatedClient]만으로는 안 됩니다 — 토큰은 있는데
+  /// `https://www.googleapis.com/auth/drive` 가 없으면 API가 `insufficient_scope` 를 냅니다.
   Future<bool> _ensureDriveScope() async {
     final GoogleSignIn gs = ref.read(googleSignInProvider);
     const List<String> scopes = <String>[
       'https://www.googleapis.com/auth/drive',
     ];
 
-    // 이미 인증된 클라이언트가 있으면 권한이 살아있는 상태로 간주합니다.
-    var authClient = await gs.authenticatedClient();
-    if (authClient != null) {
+    if (gs.currentUser == null) {
+      await gs.signInSilently();
+    }
+    if (gs.currentUser == null) {
+      if (mounted) {
+        _toast('Google 계정이 연결되어 있지 않습니다.\n상단에서 Google 로그인을 해 주세요.');
+      }
+      return false;
+    }
+
+    // 이미 허용된 경우 OS가 바로 통과시키고, 없으면 동의 UI가 뜹니다.
+    await gs.requestScopes(scopes);
+
+    if (await gs.authenticatedClient() != null) {
       return true;
     }
 
     await gs.signInSilently();
-    authClient = await gs.authenticatedClient();
-    if (authClient != null) {
-      return true;
-    }
-
-    final bool ok = await gs.requestScopes(scopes);
-    if (ok) {
-      return true;
-    }
-
-    // iOS에서 requestScopes 결과가 false여도 실제 토큰이 살아있는 경우가 있어 마지막으로 재확인합니다.
-    authClient = await gs.authenticatedClient();
-    if (authClient != null) {
+    await gs.requestScopes(scopes);
+    if (await gs.authenticatedClient() != null) {
       return true;
     }
 
     if (mounted) {
-      _toast('구글 Drive 권한이 필요해요.');
+      _toast(
+        '구글 Drive 권한이 필요합니다.\n'
+        '동의 창에서 Drive 접근을 허용했는지 확인하거나,\n'
+        '로그아웃 후 다시 로그인해 주세요.',
+      );
     }
     return false;
+  }
+
+  String _driveScopeUserMessage(Object error) {
+    final String text = error.toString();
+    if (text.contains('insufficient_scope') || text.contains('Access was denied')) {
+      return 'Google Drive 권한이 부족합니다.\n'
+          '백업을 한 번 더 눌러 동의 창을 완료하거나,\n'
+          '로그아웃 후 다시 로그인해 주세요.\n'
+          '(개발자: Google Cloud Console → OAuth 동의 화면에\n'
+          '`drive` 스코프와 Drive API 사용 설정을 확인하세요.)';
+    }
+    return text;
   }
 
   Future<drive.DriveApi?> _driveApi() async {
@@ -787,7 +808,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
           .exportCompactedBytes();
       const String appVersion = String.fromEnvironment(
         'APP_VERSION',
-        defaultValue: '1.1.7',
+        defaultValue: '1.1.8',
       );
       await KetchupDriveService(api).backupIsar(
         isarBytes: bytes,
@@ -796,7 +817,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
       );
       _toast('백업 성공!');
     } catch (e) {
-      _toast('백업 실패: $e');
+      _toast('백업 실패: ${_driveScopeUserMessage(e)}');
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -855,7 +876,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
           'iOS에서 먼저 복원 후 새 백업을 만든 뒤 Android에서 복원해 주세요.',
         );
       } else {
-        _toast('복원 실패: $e');
+        _toast('복원 실패: ${_driveScopeUserMessage(e)}');
       }
     } finally {
       if (mounted) {

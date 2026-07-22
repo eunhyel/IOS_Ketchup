@@ -76,11 +76,11 @@ flutter {
 }
 
 dependencies {
-    implementation("com.android.billingclient:billing:7.0.0")
+    implementation("com.android.billingclient:billing:8.0.0")
 }
 
 configurations.configureEach {
     resolutionStrategy {
-        force("com.android.billingclient:billing:7.0.0")
+        force("com.android.billingclient:billing:8.0.0")
     }
 }

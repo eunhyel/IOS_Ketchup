@@ -61,7 +61,7 @@ class _IosSettingsPanelBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final double h = MediaQuery.sizeOf(context).height;
-    const String version = '1.1.8';
+    const String version = '1.1.9';
 
     return Material(
       color: Colors.transparent,
@@ -175,7 +175,7 @@ class _IosSettingsPanelBody extends ConsumerWidget {
       case 5:
         ScaffoldMessenger.of(
           shellContext,
-        ).showSnackBar(const SnackBar(content: Text('현재 버전: 1.1.8')));
+        ).showSnackBar(const SnackBar(content: Text('현재 버전: 1.1.9')));
         break;
       default:
         break;

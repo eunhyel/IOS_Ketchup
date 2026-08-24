@@ -808,7 +808,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
           .exportCompactedBytes();
       const String appVersion = String.fromEnvironment(
         'APP_VERSION',
-        defaultValue: '1.1.8',
+        defaultValue: '1.1.9',
       );
       await KetchupDriveService(api).backupIsar(
         isarBytes: bytes,

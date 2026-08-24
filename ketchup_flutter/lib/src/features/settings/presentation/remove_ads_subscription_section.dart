@@ -34,8 +34,6 @@ class _RemoveAdsSubscriptionSectionState
     'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
   );
 
-  StreamSubscription<List<PurchaseDetails>>? _purchaseUiSub;
-
   bool _buying = false;
   String? _bannerMessage;
 
@@ -45,59 +43,10 @@ class _RemoveAdsSubscriptionSectionState
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      _purchaseUiSub = ref
-          .read(paymentServiceProvider)
-          .iap
-          .purchaseStream
-          .listen(_onPurchasesForUiState);
-    });
-  }
-
-  void _onPurchasesForUiState(List<PurchaseDetails> purchases) {
-    for (final PurchaseDetails p in purchases) {
-      if (p.productID != RemoveAdsIapIds.subscriptionProductId) {
-        continue;
-      }
-      switch (p.status) {
-        case PurchaseStatus.pending:
-          if (mounted) {
-            setState(() {
-              _buying = true;
-              _bannerMessage = '결제가 승인 대기 중입니다. (가족 공유·Ask to Buy 등)';
-            });
-          }
-          break;
-        case PurchaseStatus.purchased:
-        case PurchaseStatus.restored:
-        case PurchaseStatus.canceled:
-          if (mounted) {
-            setState(() {
-              _buying = false;
-              if (p.status != PurchaseStatus.canceled) {
-                _bannerMessage = null;
-              }
-            });
-          }
-          break;
-        case PurchaseStatus.error:
-          if (mounted) {
-            setState(() {
-              _buying = false;
-              _bannerMessage = p.error?.message ?? '결제에 실패했습니다.';
-            });
-          }
-          break;
-      }
-    }
   }
 
   @override
   void dispose() {
-    unawaited(_purchaseUiSub?.cancel());
     super.dispose();
   }
 
@@ -179,6 +128,15 @@ class _RemoveAdsSubscriptionSectionState
     );
     final PaymentService payment = ref.watch(paymentServiceProvider);
     final bool isSubscribed = ref.watch(isSubscribedProvider);
+
+    ref.listen<bool>(isSubscribedProvider, (_, next) {
+      if (next && mounted) {
+        setState(() {
+          _buying = false;
+          _bannerMessage = null;
+        });
+      }
+    });
 
     ref.listen<AsyncValue<ProductDetails?>>(
       subscriptionStoreProductProvider,

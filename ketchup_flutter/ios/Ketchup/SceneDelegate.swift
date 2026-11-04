@@ -3,6 +3,7 @@ import Flutter
 import GoogleSignIn
 import RealmSwift
 import UIKit
+import StoreKit
 
 private enum FlutterNativeChannelsSetup {
   static var done = false
@@ -97,7 +98,27 @@ class SceneDelegate: FlutterSceneDelegate {
       binaryMessenger: messenger
     )
     settingsChannel.setMethodCallHandler { call, result in
-      if call.method == "isICloudAvailable" {
+      if call.method == "hasActiveSubscription" {
+        guard let productID = call.arguments as? String else {
+          result(FlutterError(code: "bad_args", message: "Product ID required", details: nil))
+          return
+        }
+        Task { @MainActor in
+          var active = false
+          for await verification in StoreKit.Transaction.currentEntitlements {
+            switch verification {
+            case .verified(let transaction):
+              if transaction.productID == productID && transaction.revocationDate == nil {
+                active = true
+              }
+            case .unverified:
+              result(FlutterError(code: "unverified", message: "Entitlement verification failed", details: nil))
+              return
+            }
+          }
+          result(active)
+        }
+      } else if call.method == "isICloudAvailable" {
         // 저장·조회와 동일 컨테이너 (Entitlements 의 iCloud.com.ketchup).
         CKContainer(identifier: "iCloud.com.ketchup").accountStatus { status, _ in
           DispatchQueue.main.async {

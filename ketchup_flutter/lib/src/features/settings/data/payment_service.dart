@@ -11,8 +11,11 @@ import 'package:ketchup_flutter/src/features/settings/domain/remove_ads_iap_ids.
 ///
 /// [in_app_purchase] 플러그인 위에 스토어 연결, 상품 조회, 구매 시작, 구매 스트림 처리를 둡니다.
 class PaymentService {
-  PaymentService({required this.onSubscriptionConfirmed})
-    : subscriptionProductId = RemoveAdsIapIds.subscriptionProductId;
+  PaymentService({
+    required this.onSubscriptionConfirmed,
+    required this.onSubscriptionRevoked,
+    this.queryEntitlement,
+  }) : subscriptionProductId = RemoveAdsIapIds.subscriptionProductId;
 
   /// App Store Connect / Play Console에 등록한 자동 갱신 구독 제품 ID와 동일해야 합니다.
   final String subscriptionProductId;
@@ -20,7 +23,11 @@ class PaymentService {
   /// 구매가 확정되어 광고 제거(구독) 상태로 올릴 때 호출합니다.
   final Future<void> Function() onSubscriptionConfirmed;
 
-  final InAppPurchase _iap = InAppPurchase.instance;
+  final Future<void> Function() onSubscriptionRevoked;
+  final Future<bool?> Function()? queryEntitlement;
+  Future<void>? _refreshing;
+
+  InAppPurchase get _iap => InAppPurchase.instance;
 
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   bool _started = false;
@@ -126,6 +133,7 @@ class PaymentService {
     }
     _started = true;
     _attachPurchaseStream();
+    await refreshEntitlement();
     try {
       await _iap.restorePurchases();
     } catch (e, st) {
@@ -135,16 +143,13 @@ class PaymentService {
 
   void _attachPurchaseStream() {
     _purchaseSub?.cancel();
-    runZonedGuarded(
-      () {
-        _purchaseSub = _iap.purchaseStream.listen(
-          _onPurchaseUpdates,
-          onError: _onPurchaseStreamError,
-          cancelOnError: false,
-        );
-      },
-      _onPurchaseStreamError,
-    );
+    runZonedGuarded(() {
+      _purchaseSub = _iap.purchaseStream.listen(
+        _onPurchaseUpdates,
+        onError: _onPurchaseStreamError,
+        cancelOnError: false,
+      );
+    }, _onPurchaseStreamError);
   }
 
   void _onPurchaseStreamError(Object error, StackTrace stackTrace) {
@@ -191,7 +196,56 @@ class PaymentService {
     return _iap.buyNonConsumable(purchaseParam: param);
   }
 
-  Future<void> restorePurchases() => _iap.restorePurchases();
+  Future<void> restorePurchases() async {
+    await _iap.restorePurchases();
+    await refreshEntitlement();
+  }
+
+  Future<void> refreshEntitlement() {
+    return _refreshing ??= _refreshEntitlement().whenComplete(
+      () => _refreshing = null,
+    );
+  }
+
+  Future<void> _refreshEntitlement() async {
+    try {
+      final bool active;
+      if (queryEntitlement != null) {
+        final result = await queryEntitlement!();
+        if (result == null) return;
+        active = result;
+      } else if (!await _iap.isAvailable()) {
+        return;
+      } else if (Platform.isAndroid) {
+        final response = await _iap
+            .getPlatformAddition<InAppPurchaseAndroidPlatformAddition>()
+            .queryPastPurchases();
+        if (response.error != null) return;
+        active = response.pastPurchases.any(
+          (p) =>
+              p.productID == subscriptionProductId &&
+              (p.status == PurchaseStatus.purchased ||
+                  p.status == PurchaseStatus.restored),
+        );
+      } else if (Platform.isIOS) {
+        final result = await const MethodChannel(
+          'com.o2a.ketchup/settings',
+        ).invokeMethod<bool>('hasActiveSubscription', subscriptionProductId);
+        if (result == null) return;
+        active = result;
+      } else {
+        return;
+      }
+      if (active) {
+        await onSubscriptionConfirmed();
+      } else {
+        await onSubscriptionRevoked();
+      }
+    } catch (e, st) {
+      // A failed query is not evidence that a paid entitlement expired.
+      debugPrint('Subscription status unavailable: $e $st');
+    }
+  }
 
   Future<void> _onPurchaseUpdates(List<PurchaseDetails> purchases) async {
     _streamAttachRetry = 0;
@@ -210,14 +264,7 @@ class PaymentService {
         break;
       case PurchaseStatus.purchased:
       case PurchaseStatus.restored:
-        // --- 영수증 검증 (서버 권장) ---
-        // Apple: App Store Server API / `verificationData.serverVerificationData`(레거시 영수증)
-        // Google: Play Developer API + purchase token
-        // final String data = purchase.verificationData.serverVerificationData;
-        // if (!await MyBackend.verifySubscription(platform: purchase.verificationData.source, payload: data)) {
-        //   return;
-        // }
-        await onSubscriptionConfirmed();
+        await refreshEntitlement();
         if (purchase.pendingCompletePurchase) {
           await _iap.completePurchase(purchase);
         }

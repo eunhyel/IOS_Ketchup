@@ -10,6 +10,8 @@ import 'package:ketchup_flutter/src/features/settings/presentation/settings_prov
 final Provider<PaymentService> paymentServiceProvider =
     Provider<PaymentService>((Ref ref) {
       final PaymentService service = PaymentService(
+        onSubscriptionRevoked: () =>
+            ref.read(appSettingsProvider.notifier).setRemoveAds(false),
         onSubscriptionConfirmed: () => ref
             .read(appSettingsProvider.notifier)
             .applyRemoveAdsFromStoreSubscription(),
@@ -50,15 +52,30 @@ class PaymentServiceScope extends ConsumerStatefulWidget {
   final Widget child;
 
   @override
-  ConsumerState<PaymentServiceScope> createState() => _PaymentServiceScopeState();
+  ConsumerState<PaymentServiceScope> createState() =>
+      _PaymentServiceScopeState();
 }
 
 class _PaymentServiceScopeState extends ConsumerState<PaymentServiceScope> {
   bool _enablePaymentInit = false;
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void dispose() {
+    _lifecycle.dispose();
+    super.dispose();
+  }
+
+  void _refreshSubscription() {
+    if (_enablePaymentInit) {
+      unawaited(ref.read(paymentServiceProvider).refreshEntitlement());
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _refreshSubscription);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future<void>.delayed(const Duration(milliseconds: 900), () {
         if (!mounted) {

@@ -1,104 +1,69 @@
-# Ketchup Flutter 기능 명세 (1차 초안)
+# Ketchup Flutter 기능 명세
 
-## 목표
-- 기존 iOS `Ketchup` 앱의 핵심 경험을 Flutter(Android 우선)로 이식한다.
-- 최종 목표는 iOS와 기능 100% 동등성(작성/수정/백업/복원/로그인/설정)이다.
+기준: 2026-11-04 코드, `1.1.9+18`. 초기 MVP 계획이 아닌 현재 구현을 기록합니다.
+실제 서비스 검증 상태는 [README](../README.md)의 검증 항목을 참고합니다.
 
-## 핵심 화면
+## 일기
 
-### 1) 메인 화면 (`ViewController` 대응)
-- 월별 일기 목록 조회(기본은 최신 월 기준).
-- 페이지 형태의 목록 탐색(이전/다음 월 이동).
-- 데이터가 없을 때 안내 문구 표시.
-- 상단 액션:
-  - `작성` 버튼: 작성 화면 진입.
-  - `설정` 버튼: 설정 화면/패널 진입.
-- 앱 시작 시 조건부 잠금 화면 표시(비밀번호 설정 시).
+- 월별 그리드 목록과 이전·다음 월 탐색, 빈 상태 안내.
+- 작성·상세 보기·수정 모드, 본문·날짜·기본 이미지 또는 갤러리 사진.
+- 저장·삭제 후 목록 갱신, 변경사항이 있는 화면을 닫을 때 확인.
+- 신규 작성 임시 저장과 복원, 인스타그램 스토리 공유.
+- Isar에 일기 데이터를 저장하고 이미지 파일은 Documents 아래에서 관리.
 
-### 2) 작성/상세/수정 화면 (`WriteView` 대응)
-- 모드 3가지:
-  - `view`: 읽기 전용 상세.
-  - `write`: 신규 작성.
-  - `edit`: 기존 수정.
-- 입력 항목:
-  - 본문 텍스트.
-  - 날짜 선택(최대 오늘).
-  - 이미지(갤러리 선택 또는 기본 이미지 랜덤).
-- 액션:
-  - 저장(신규/수정).
-  - 삭제.
-  - 닫기(변경사항 존재 시 확인 다이얼로그).
-  - 인스타 스토리 공유.
+관련 코드: `lib/src/features/diary/`, `lib/src/core/share/`.
 
-### 3) 설정 화면 (`SettingView` 대응)
-- 메뉴:
-  - 암호 설정
-  - 백업 및 동기화
-  - 글씨체 변경
-  - 개발자 한마디
-  - 케찹의 역사(외부 링크)
-  - 현재 버전 표시
+## 설정과 잠금
 
-### 4) 백업/복원 화면 (`BackUpView` 대응)
-- Google 로그인/자동 로그인.
-- Google Drive 백업:
-  - 앱 전용 폴더(`Ketchup`) 확인/생성.
-  - 백업 파일 업로드(중복 생성 대신 업데이트).
-- Google Drive 복원:
-  - 폴더 내 최신 백업 파일 탐색.
-  - Realm + CoreData 파일 복원 시나리오 처리.
-- **클라우드 동기화**: 설정의「클라우드 동기화」+ Firebase Auth 로그인 시 **Firestore** 양방향 동기화(정책은 `docs/sync-policy.md`). iOS 네이티브는 iCloud로 별도 설계 가능.
+- 비밀번호 설정과 앱 진입 잠금, 번들 글꼴 선택.
+- 개발자 한마디, 케찹의 역사 링크, 앱 버전 표시.
+- 설정은 Isar에 저장하고 비밀번호 SHA-256 해시는 별도 JSON 파일에 저장.
+- 잠금 UI는 DB 파일 암호화 기능을 의미하지 않습니다.
 
-## 데이터 소스 및 흐름
-- 로컬 저장소:
-  - iOS: Realm + CoreData 병행.
-  - Flutter: 단일 로컬 저장소로 통합(후보 Isar/Drift).
-- 메인 목록 로드:
-  - 시작 시 로컬 데이터 조회 -> UI 렌더링.
-- 저장/수정/삭제:
-  - 로컬 저장소 반영 -> 메인 목록 즉시 갱신.
-- 백업/복원:
-  - 로컬 파일 <-> Google Drive 파일 동기화.
+관련 코드: `lib/src/features/settings/`, `lib/src/core/lock/`.
 
-## 이벤트/상태 요약
-- 주요 이벤트:
-  - `onCreateEntry`, `onUpdateEntry`, `onDeleteEntry`
-  - `onOpenSettings`, `onOpenBackup`
-  - `onGoogleLogin`, `onBackupRequested`, `onRestoreRequested`
-- 주요 상태:
-  - 로그인 여부
-  - 로딩 여부(백업/복원 진행)
-  - 일기 목록/선택 항목
-  - 작성 화면 모드(view/write/edit)
+## 백업·복원과 내보내기
 
-## Flutter 1차 MVP 범위
-- 포함:
-  - 메인 목록 스켈레톤 UI
-  - 작성 진입 버튼(FAB)
-  - 설정/백업 진입점 UI
-  - 더미 데이터 렌더링
-- 제외(2차 이후):
-  - 실제 DB 영속화
-  - Google 로그인/Drive 연동
-  - 복원 파이프라인
-  - ~~클라우드 동기화~~ → Firestore 동기화(설정 토글) 반영됨
+- Google 로그인 및 이전 로그인 복원, Drive 권한 확보.
+- Drive의 `Ketchup` 폴더에 `ketchup_backup.zip`을 생성하거나 갱신.
+- ZIP에는 Isar 스냅샷, 매니페스트, 존재하는 경우 이미지 번들을 포함.
+- 복원 전 덮어쓰기 확인. ZIP → 분리형 v2 → `default.realm` → v1 JSON 순으로 호환 경로 시도.
+- iOS 구형 Realm 파싱은 네이티브 브리지 사용. Android는 구형 Realm만 있는 백업을 직접 복원하지 못함.
+- 복원 시 현재 선택한 글꼴 유지, 이미지 경로 보정.
+- 일기 PDF 내보내기 및 데이터 초기화 제공.
 
-## 아키텍처 확정 (고정)
-- 상태관리: Riverpod (확정)
-- 레이어:
-  - `features/` (화면 단위)
-  - `domain/` (엔티티, 유즈케이스)
-  - `data/` (로컬/원격 리포지토리)
-- 리포지토리 패턴: `DiaryRepository` 인터페이스 + 구현체 주입
-- 네비게이션: Flutter `Navigator` 명명 라우트(메인/작성/설정/백업) 1차 반영
+세부 형식과 제한: [데이터 스키마](data-schema.md).
 
-## 핵심 도메인 구현 진행 현황 (3차)
-- 메인 목록/작성/수정/설정(폰트/잠금) 화면의 상태 흐름을 Riverpod으로 반영.
-- iOS 구조 대응 분리:
-  - `DailyModel` -> `DiaryEntry` 엔티티
-  - `DataRealm/CoreDataManager` -> `DiaryRepository` + `DiaryLocalDataSource(Isar)`
-  - `UserDefaults(설정)` -> `SettingsRepository` + `SettingsLocalDataSource(Isar)`
-- 기존 UX 상태 전이 반영:
-  - 보기 -> 수정 전환
-  - 수정/작성 중 변경사항 존재 시 닫기 확인 다이얼로그
-  - 저장/삭제 후 목록 즉시 갱신
+## 동기화
+
+| 경로 | 현재 동작 |
+|---|---|
+| Firestore | Google/Firebase 로그인 시 활성화. `useCloudSync` 값과 무관 |
+| iCloud | iOS에서 `useIcloudSync`가 켜진 경우 업로드·가져오기 수행 |
+| iCloud 설정 UI | iOS debug/profile에서만 표시, release에서는 숨김 |
+| Drive | 사용자가 실행하는 파일 백업·복원. 실시간 동기화와 별개 |
+
+iCloud는 Firestore와 같은 실시간 양방향 리스너가 아닙니다.
+로컬이 비어 있을 때 가져오기, 활성화 시 로컬 전체 업로드 등의 경로를 사용합니다.
+초기화는 로컬뿐 아니라 iCloud 및 로그인 계정의 Firestore 일기 삭제도 시도합니다.
+자세한 조건과 실패 처리는 [동기화 정책](sync-policy.md)을 참고합니다.
+
+## 광고와 구독
+
+- AdMob 배너·전면 광고, 스토어 구독 상품 조회·구매·복원.
+- 제품 ID `remove_ads_monthly`, Google Play 기본 요금제 ID `monthly`.
+- 광고 제거 여부는 `removeAdsSubscriptionActive`를 기준으로 판단.
+- 앱 시작·복귀·구매/복원 후에만 스토어 권한을 조회하여 활성 상태를 갱신.
+- iOS는 검증된 StoreKit currentEntitlements, Android는 현재 보유 구매 조회 사용. 만료·회수로 권한이 없으면 광고 제거 해제. 조회 오류 시 기존 상태 유지.
+- 서버 영수증 검증 및 서버 알림은 미구현. 실제 스토어 만료·환불 시나리오는 기기 검증 필요.
+
+관련 코드: `lib/src/core/ads/`, `lib/src/features/settings/data/payment_service.dart`.
+
+## 아키텍처
+
+- Riverpod 상태 관리, Isar Community 로컬 DB.
+- 기능별 `presentation` / `data` / `domain` 분리.
+- `DiaryRepository`와 `SettingsRepository` 인터페이스 및 Isar 구현체.
+- Flutter Navigator 명명 라우트, `WriteEditArgs`로 작성·상세·수정 전달.
+- 앱 시작 시 저장소·Firebase·광고 초기화 후 `LockGate`, `SyncHost`, `PaymentServiceScope` 연결.
+- iOS 플랫폼 연동은 `ios/Ketchup/SceneDelegate.swift`와 Dart 플랫폼 브리지에서 처리.

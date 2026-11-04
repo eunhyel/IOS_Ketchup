@@ -29,6 +29,7 @@ class KetchupDriveService {
   static const String legacyRealmName = 'default.realm';
   static const String legacyV1Name = 'ketchup_backup_v1.json';
   static const String imagesBundleName = 'ketchup_images_bundle.json';
+
   /// 단일 파일 백업(내부에 manifest / isar / 이미지 번들 포함).
   static const String zipBackupName = 'ketchup_backup.zip';
 
@@ -41,7 +42,9 @@ class KetchupDriveService {
     required Isar currentIsar,
   }) async {
     final String hash = sha256Hex(isarBytes);
-    final Uint8List? imagesBundle = await buildImagesBundleBytesForBackup(currentIsar);
+    final Uint8List? imagesBundle = await buildImagesBundleBytesForBackup(
+      currentIsar,
+    );
     final Map<String, BackupFileInfo> files = <String, BackupFileInfo>{
       dataName: BackupFileInfo(sha256: hash, size: isarBytes.length),
     };
@@ -125,7 +128,10 @@ class KetchupDriveService {
     }
   }
 
-  Future<void> _deleteDriveFileByNameIfExists(String folderId, String fileName) async {
+  Future<void> _deleteDriveFileByNameIfExists(
+    String folderId,
+    String fileName,
+  ) async {
     final drive.FileList list = await _api.files.list(
       q: "'$folderId' in parents and name='$fileName' and trashed=false",
       spaces: 'drive',
@@ -215,7 +221,10 @@ class KetchupDriveService {
       try {
         final Uint8List zipBytes = await _downloadBytes(zipFile!.id!);
         final Archive archive = ZipDecoder().decodeBytes(zipBytes);
-        final Uint8List? manifestBytes = _readZipEntryBytes(archive, manifestName);
+        final Uint8List? manifestBytes = _readZipEntryBytes(
+          archive,
+          manifestName,
+        );
         final Uint8List? dataBytes = _readZipEntryBytes(archive, dataName);
         if (manifestBytes == null || dataBytes == null) {
           throw StateError('ZIP에 $manifestName 또는 $dataName 이 없습니다.');
@@ -246,7 +255,10 @@ class KetchupDriveService {
           dataBytes,
           afterOpen: (Isar isar) => _applyPreservedFont(isar, preservedFontKey),
         );
-        final Uint8List? bundleFromZip = _readZipEntryBytes(archive, imagesBundleName);
+        final Uint8List? bundleFromZip = _readZipEntryBytes(
+          archive,
+          imagesBundleName,
+        );
         await _restoreImagesBundleFromBytes(bundleFromZip);
         await _repairImagePathsAfterRestore(isarController.currentIsar);
         return;
@@ -397,67 +409,42 @@ class KetchupDriveService {
     return builder.takeBytes();
   }
 
-  static Future<Uint8List?> buildImagesBundleBytesForBackup(Isar currentIsar) async {
-    try {
-      final Directory doc = await getApplicationDocumentsDirectory();
-      final Directory imgDir = Directory(p.join(doc.path, 'ketchup_images'));
-      final Map<String, String> files = <String, String>{};
-      if (await imgDir.exists()) {
-        final List<FileSystemEntity> entities = await imgDir.list().toList();
-        for (final FileSystemEntity e in entities) {
-          if (e is! File) {
-            continue;
-          }
-          final String name = p.basename(e.path);
-          final List<int> bytes = await e.readAsBytes();
-          if (bytes.isEmpty) {
-            continue;
-          }
-          files[name] = base64Encode(bytes);
-        }
-      }
-
-      // 폴더 스캔에 누락된 이미지가 있어도(경로 이전/이름 변경 등),
-      // 실제 Isar 레코드가 참조하는 파일을 추가로 번들링합니다.
-      final List<IsarDiaryEntry> rows = await currentIsar.isarDiaryEntrys.where().findAll();
-      for (final IsarDiaryEntry row in rows) {
-        final String? raw = row.imagePath;
-        if (raw == null || raw.trim().isEmpty) {
-          continue;
-        }
-        final String? resolved = DiaryImagePaths.resolveDisplay(raw);
-        if (resolved == null || resolved.isEmpty) {
-          continue;
-        }
-        final File f = File(resolved);
-        if (!await f.exists()) {
-          continue;
-        }
-        final String name = p.basename(f.path);
-        if (files.containsKey(name)) {
-          continue;
-        }
-        final List<int> bytes = await f.readAsBytes();
-        if (bytes.isEmpty) {
-          continue;
-        }
-        files[name] = base64Encode(bytes);
-      }
-      if (files.isEmpty) {
-        return null;
-      }
-      final Map<String, dynamic> root = <String, dynamic>{
-        'schemaVersion': 1,
-        'files': files,
-      };
-      return Uint8List.fromList(utf8.encode(json.encode(root)));
-    } on Object {
-      return null;
-    }
+  static Future<Uint8List?> buildImagesBundleBytesForBackup(
+    Isar currentIsar,
+  ) async {
+    final rows = await currentIsar.isarDiaryEntrys.where().findAll();
+    return buildImagesBundleForPaths({
+      for (final row in rows) row.id: row.imagePath,
+    });
   }
 
-  Future<Uint8List?> _buildImagesBundleBytes(Isar currentIsar) =>
-      buildImagesBundleBytesForBackup(currentIsar);
+  static Future<Uint8List?> buildImagesBundleForPaths(
+    Map<int, String?> paths,
+  ) async {
+    final files = <String, String>{};
+    for (final row in paths.entries) {
+      final raw = row.value;
+      if (raw == null || raw.trim().isEmpty) continue;
+      final resolved = DiaryImagePaths.resolveDisplay(raw);
+      if (resolved == null) {
+        throw StateError('일기 ${row.key}의 사진을 찾을 수 없어 백업을 중단했습니다.');
+      }
+      final bytes = await File(resolved).readAsBytes();
+      if (bytes.isEmpty) {
+        throw StateError('일기 ${row.key}의 사진 파일이 비어 있어 백업을 중단했습니다.');
+      }
+      final name = p.basename(resolved);
+      final encoded = base64Encode(bytes);
+      if (files.containsKey(name) && files[name] != encoded) {
+        throw StateError('서로 다른 사진의 파일명이 같아 백업을 중단했습니다: $name');
+      }
+      files[name] = encoded;
+    }
+    if (files.isEmpty) return null;
+    return Uint8List.fromList(
+      utf8.encode(json.encode({'schemaVersion': 1, 'files': files})),
+    );
+  }
 
   Uint8List? _readZipEntryBytes(Archive archive, String baseName) {
     for (final ArchiveFile f in archive.files) {

@@ -1,6 +1,6 @@
 # Ketchup Flutter 기능 명세
 
-기준: 2026-11-04 코드, `1.1.9+18`. 초기 MVP 계획이 아닌 현재 구현을 기록합니다.
+기준: 2026-11-04 코드, `1.1.11+19`. 초기 MVP 계획이 아닌 현재 구현을 기록합니다.
 실제 서비스 검증 상태는 [README](../README.md)의 검증 항목을 참고합니다.
 
 ## 일기
@@ -38,8 +38,8 @@
 
 | 경로 | 현재 동작 |
 |---|---|
-| Firestore | Google/Firebase 로그인 시 활성화. `useCloudSync` 값과 무관 |
-| iCloud | iOS에서 `useIcloudSync`가 켜진 경우 업로드·가져오기 수행 |
+| Firestore | 보관함 UID와 로그인 UID가 일치하고 초기화 차단이 없을 때 활성화 |
+| iCloud | 비로그인 보관함의 iOS에서 `useIcloudSync`가 켜진 경우 |
 | iCloud 설정 UI | iOS debug/profile에서만 표시, release에서는 숨김 |
 | Drive | 사용자가 실행하는 파일 백업·복원. 실시간 동기화와 별개 |
 
@@ -58,6 +58,10 @@ iCloud는 Firestore와 같은 실시간 양방향 리스너가 아닙니다.
 - 서버 영수증 검증 및 서버 알림은 미구현. 실제 스토어 만료·환불 시나리오는 기기 검증 필요.
 
 관련 코드: `lib/src/core/ads/`, `lib/src/features/settings/data/payment_service.dart`.
+
+## 계정별 보관함
+
+비로그인 데이터는 기기에 별도로 유지하며 로그인 계정으로 자동 업로드하지 않습니다. Google 계정마다 DB·사진·임시저장·설정 파일을 분리합니다. 로그아웃하면 비로그인 보관함으로 돌아갑니다.
 
 ## 아키텍처
 

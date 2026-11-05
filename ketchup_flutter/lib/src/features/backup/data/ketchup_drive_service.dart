@@ -1,3 +1,4 @@
+import 'package:ketchup_flutter/src/core/storage/app_documents.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -14,7 +15,6 @@ import 'package:ketchup_flutter/src/features/diary/data/local/diary_image_paths.
 import 'package:ketchup_flutter/src/features/diary/data/local/isar_diary_entry.dart';
 import 'package:ketchup_flutter/src/features/settings/data/local/settings_local_datasource.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 /// Google Drive operations for the `Ketchup` app folder (parity with iOS `BackUpView`).
 class KetchupDriveService {
@@ -479,7 +479,7 @@ class KetchupDriveService {
       return;
     }
 
-    final Directory doc = await getApplicationDocumentsDirectory();
+    final Directory doc = AppDocuments.directory();
     final Directory imgDir = Directory(p.join(doc.path, 'ketchup_images'));
     if (!await imgDir.exists()) {
       await imgDir.create(recursive: true);
@@ -502,7 +502,7 @@ class KetchupDriveService {
   }
 
   Future<void> _repairImagePathsAfterRestore(Isar isar) async {
-    final Directory doc = await getApplicationDocumentsDirectory();
+    final Directory doc = AppDocuments.directory();
     final Directory imgDir = Directory(p.join(doc.path, 'ketchup_images'));
     if (!await imgDir.exists()) {
       return;

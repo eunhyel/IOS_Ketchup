@@ -1,8 +1,8 @@
+import 'package:ketchup_flutter/src/core/storage/app_documents.dart';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import 'package:ketchup_flutter/src/features/diary/data/local/diary_image_paths.dart';
 
@@ -15,7 +15,7 @@ class WriteDraftStorage {
   static const int _version = 1;
 
   static Future<File> _file() async {
-    final Directory dir = await getApplicationDocumentsDirectory();
+    final Directory dir = AppDocuments.directory();
     return File(p.join(dir.path, _fileName));
   }
 

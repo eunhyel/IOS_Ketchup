@@ -1,3 +1,5 @@
+import 'package:ketchup_flutter/src/core/storage/app_documents.dart';
+import 'package:ketchup_flutter/src/features/sync/presentation/sync_providers.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -342,7 +344,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
           ),
         ),
         // iCloud 동기화: 디버그/프로파일에서만 노출 (릴리스 스토어 빌드에서는 숨김)
-        if (Platform.isIOS && !kReleaseMode) ...<Widget>[
+        if (Platform.isIOS &&
+            !kReleaseMode &&
+            AppDocuments.accountUid == null) ...<Widget>[
           // 아이콘 중심 187.5 * scale — 라벨은 81pt보다 넓어 한 줄로 두기 위해 블록만 넓힙니다.
           Positioned(
             left: 77.5 * scale,
@@ -440,6 +444,9 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     if (next) {
       setState(() => _busy = true);
       try {
+        await ref
+            .read(appSettingsProvider.notifier)
+            .setBlockRemoteDiaryRestore(false);
         await ref.read(appSettingsProvider.notifier).setUseIcloudSync(true);
         await () async {
           // 재설치 복원: 로컬이 비어 있을 때만 iCloud에서 채움. 이미 일기가 있으면 전부 CloudKit에 올림.
@@ -542,7 +549,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     }
     final bool? ok = await showKetchupIosConfirmDialog(
       context,
-      message: '정말 초기화 시키시겠습니까?',
+      message: '현재 보관함의 일기와 연결된 클라우드 일기를 삭제할까요? Drive 백업은 유지됩니다.',
       leftText: '아니요',
       rightText: '예',
     );
@@ -552,27 +559,45 @@ class _BackupPageState extends ConsumerState<BackupPage> {
 
     setState(() => _busy = true);
     try {
-      // 원격 네트워크 상태에 영향받지 않도록 로컬은 즉시 정리합니다.
-      await ref.read(diaryLocalDataSourceProvider).clearAllLocalAndMeta();
+      final uid = AppDocuments.accountUid;
+      final sync = ref.read(firestoreDiarySyncProvider);
+      // Close the gate before any await; persist it before deleting local data.
+      sync.setSuppressRemoteApplyFromPersistedSettings(true);
+      final diary = ref.read(diaryEntriesProvider.notifier);
+      await ref
+          .read(appSettingsProvider.notifier)
+          .setBlockRemoteDiaryRestore(true);
+      if (ref.read(appSettingsProvider).valueOrNull?.blockRemoteDiaryRestore !=
+          true) {
+        throw StateError('초기화 차단 상태를 저장하지 못했습니다.');
+      }
+      await sync.stop();
+      await diary.cancelRemoteWork();
       await ref.read(appSettingsProvider.notifier).setUseCloudSync(false);
       await ref.read(appSettingsProvider.notifier).setUseIcloudSync(false);
-
-      if (Platform.isIOS) {
+      await ref.read(diaryLocalDataSourceProvider).clearAllLocalAndMeta();
+      ref.invalidate(diaryEntriesProvider);
+      if (uid != null) {
+        await FirebaseFirestore.instance.waitForPendingWrites().timeout(
+          const Duration(seconds: 15),
+        );
+        await _clearRemoteDiaryEntries(uid);
+      } else if (Platform.isIOS) {
         await IcloudDaySyncBridge.clearDays().timeout(
-          const Duration(seconds: 8),
-          onTimeout: () => 0,
+          const Duration(seconds: 15),
         );
       }
-
-      ref.invalidate(diaryEntriesProvider);
-      _toast('초기화 완료');
-
-      final User? user = ref.read(firebaseAuthProvider).currentUser;
-      if (user != null) {
-        unawaited(_clearRemoteDiaryEntriesInBackground(user.uid));
+      if (!mounted) return;
+      if (uid != null) {
+        await ref
+            .read(appSettingsProvider.notifier)
+            .setBlockRemoteDiaryRestore(false);
       }
+      _toast('초기화 완료');
     } catch (e) {
-      _toast('초기화 실패: $e');
+      _toast(
+        '초기화를 완료하지 못했습니다. 원격 데이터 재수신은 중단했습니다. 연결 상태를 확인한 뒤 초기화를 다시 시도해 주세요. $e',
+      );
     } finally {
       if (mounted) {
         setState(() => _busy = false);
@@ -580,31 +605,26 @@ class _BackupPageState extends ConsumerState<BackupPage> {
     }
   }
 
-  Future<void> _clearRemoteDiaryEntriesInBackground(String uid) async {
-    try {
-      final CollectionReference<Map<String, dynamic>> col = FirebaseFirestore
-          .instance
-          .collection('users')
-          .doc(uid)
-          .collection('diary_entries');
-
-      // Firestore 배치는 500개 제한이 있어 페이지 단위로 지웁니다.
-      while (true) {
-        final QuerySnapshot<Map<String, dynamic>> snap = await col
-            .limit(450)
-            .get()
-            .timeout(const Duration(seconds: 6));
-        if (snap.docs.isEmpty) {
-          break;
-        }
-        final WriteBatch batch = FirebaseFirestore.instance.batch();
-        for (final QueryDocumentSnapshot<Map<String, dynamic>> d in snap.docs) {
-          batch.delete(d.reference);
-        }
-        await batch.commit().timeout(const Duration(seconds: 6));
+  Future<void> _clearRemoteDiaryEntries(String uid) async {
+    final col = FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('diary_entries');
+    while (true) {
+      final snap = await col
+          .where('deleted', isEqualTo: false)
+          .limit(450)
+          .get(const GetOptions(source: Source.server))
+          .timeout(const Duration(seconds: 15));
+      if (snap.docs.isEmpty) return;
+      final batch = FirebaseFirestore.instance.batch();
+      for (final doc in snap.docs) {
+        batch.set(doc.reference, {
+          'deleted': true,
+          'updatedAtMs': DateTime.now().millisecondsSinceEpoch,
+        }, SetOptions(merge: true));
       }
-    } catch (_) {
-      // 원격 정리 실패는 조용히 무시 (로컬 초기화는 이미 완료됨)
+      await batch.commit().timeout(const Duration(seconds: 15));
     }
   }
 
@@ -647,6 +667,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
         idToken: ga.idToken,
       );
       await ref.read(firebaseAuthProvider).signInWithCredential(credential);
+      if (!mounted) return;
       // Firebase용 토큰만 있고 Drive 스코프가 빠지는 경우가 있어, 백업 전에 동의를 받습니다.
       await gs.requestScopes(const <String>[
         'https://www.googleapis.com/auth/drive',
@@ -754,7 +775,8 @@ class _BackupPageState extends ConsumerState<BackupPage> {
 
   String _driveScopeUserMessage(Object error) {
     final String text = error.toString();
-    if (text.contains('insufficient_scope') || text.contains('Access was denied')) {
+    if (text.contains('insufficient_scope') ||
+        text.contains('Access was denied')) {
       return 'Google Drive 권한이 부족합니다.\n'
           '백업을 한 번 더 눌러 동의 창을 완료하거나,\n'
           '로그아웃 후 다시 로그인해 주세요.\n'
@@ -808,7 +830,7 @@ class _BackupPageState extends ConsumerState<BackupPage> {
           .exportCompactedBytes();
       const String appVersion = String.fromEnvironment(
         'APP_VERSION',
-        defaultValue: '1.1.9',
+        defaultValue: '1.1.11',
       );
       await KetchupDriveService(api).backupIsar(
         isarBytes: bytes,

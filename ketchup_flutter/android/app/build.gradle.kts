@@ -65,6 +65,8 @@ android {
 
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
             // Google Play 업로드용 서명
             signingConfig = signingConfigs.getByName("release")
         }

@@ -30,7 +30,7 @@ class AppSettings {
   /// iOS CloudKit `FlutterDiaryDay` 업로드·가져오기 (Apple ID, iCloud 용량).
   final bool useIcloudSync;
 
-  /// 백업 화면 「초기화」(로컬만 삭제) 후, 앱 재실행 시에도 Firestore/iCloud로 일기를 다시 채우지 않음. 로그아웃 시 false로 돌림.
+  /// 초기화 처리 중 또는 원격 정리 실패 후 원격 반영을 차단. 보관함별로 유지합니다.
   final bool blockRemoteDiaryRestore;
 
   /// 레거시 스위치·백업 호환용. 광고 숨김은 [removeAdsSubscriptionActive]만 따릅니다.

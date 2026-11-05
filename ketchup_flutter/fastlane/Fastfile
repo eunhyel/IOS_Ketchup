@@ -1,0 +1,87 @@
+PROJECT_ROOT = File.expand_path("..", __dir__)
+IOS_APP_ID = "com.O2A.Ketchup"
+ANDROID_APP_ID = "com.o2a.ketchup"
+
+def required_key_file(variable)
+  value = ENV[variable].to_s
+  UI.user_error!("Set #{variable} to the credentials JSON path.") if value.empty?
+  path = File.expand_path(value, PROJECT_ROOT)
+  UI.user_error!("#{variable} does not point to a readable file.") unless File.file?(path) && File.readable?(path)
+  path
+end
+
+def build_flags(options)
+  flags = []
+  if options[:build_number]
+    number = options[:build_number].to_s
+    UI.user_error!("build_number must be a positive integer.") unless number.match?(/\A[1-9][0-9]*\z/)
+    flags += ["--build-number", number]
+  end
+  flags
+end
+
+def require_upload_build_number(options)
+  UI.user_error!("Pass a new build_number, e.g. build_number:19.") unless options[:build_number]
+  build_flags(options)
+end
+
+platform :ios do
+  desc "Build a signed App Store IPA"
+  lane :build do |options|
+    flags = build_flags(options)
+    export_options = ENV["IOS_EXPORT_OPTIONS_PLIST"].to_s
+    if export_options.empty?
+      flags += ["--export-method", "app-store"]
+    else
+      path = File.expand_path(export_options, PROJECT_ROOT)
+      UI.user_error!("IOS_EXPORT_OPTIONS_PLIST does not point to a file.") unless File.file?(path)
+      flags += ["--export-options-plist", path]
+    end
+    Dir.chdir(PROJECT_ROOT) { sh("flutter", "build", "ipa", "--release", "--flavor", "Ketchup", *flags) }
+    files = Dir.glob(File.join(PROJECT_ROOT, "build/ios/ipa/*.ipa"))
+    UI.user_error!("Expected exactly one exported IPA in build/ios/ipa.") unless files.length == 1
+    files.first
+  end
+
+  desc "Build and upload to TestFlight"
+  lane :beta do |options|
+    require_upload_build_number(options)
+    key = required_key_file("ASC_API_KEY_PATH")
+    ipa = build(options)
+    upload_to_testflight(
+      app_identifier: IOS_APP_ID,
+      api_key_path: key,
+      ipa: ipa,
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
+
+platform :android do
+  desc "Build a signed release Android App Bundle"
+  lane :build do |options|
+    flags = build_flags(options)
+    Dir.chdir(PROJECT_ROOT) { sh("flutter", "build", "appbundle", "--release", *flags) }
+    path = File.join(PROJECT_ROOT, "build/app/outputs/bundle/release/app-release.aab")
+    UI.user_error!("Expected release AAB at #{path}.") unless File.file?(path)
+    path
+  end
+
+  desc "Build and upload to the Google Play internal test track"
+  lane :beta do |options|
+    require_upload_build_number(options)
+    key = required_key_file("PLAY_SERVICE_ACCOUNT_JSON")
+    aab = build(options)
+    upload_to_play_store(
+      package_name: ANDROID_APP_ID,
+      json_key: key,
+      aab: aab,
+      track: "internal",
+      release_status: "completed",
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end

@@ -37,16 +37,47 @@ class _RemoveAdsSubscriptionSectionState
   bool _buying = false;
   String? _bannerMessage;
 
-  /// true: 구독 버튼을 눌렀는데 상품을 쓸 수 없을 때만 실패 문구(빨간 안내 +「상품 정보 없음」) 표시.
+  /// 사용자가 요청한 상품 조회가 실패하면 재시도 안내를 표시합니다.
   bool _showProductFetchFailureUi = false;
+  StreamSubscription<List<PurchaseDetails>>? _purchaseUpdates;
 
   @override
   void initState() {
     super.initState();
+    _purchaseUpdates = ref
+        .read(paymentServiceProvider)
+        .iap
+        .purchaseStream
+        .listen(
+          (purchases) {
+            if (!mounted || !_buying) return;
+            for (final purchase in purchases) {
+              if (purchase.productID != RemoveAdsIapIds.subscriptionProductId ||
+                  purchase.status == PurchaseStatus.pending) {
+                continue;
+              }
+              setState(() {
+                _buying = false;
+                _bannerMessage = purchase.status == PurchaseStatus.error
+                    ? '결제를 완료하지 못했습니다. 다시 시도해 주세요.'
+                    : null;
+              });
+              break;
+            }
+          },
+          onError: (Object error) {
+            if (!mounted || !_buying) return;
+            setState(() {
+              _buying = false;
+              _bannerMessage = '스토어에 연결하지 못했습니다. 다시 시도해 주세요.';
+            });
+          },
+        );
   }
 
   @override
   void dispose() {
+    unawaited(_purchaseUpdates?.cancel());
     super.dispose();
   }
 
@@ -58,7 +89,12 @@ class _RemoveAdsSubscriptionSectionState
       _buying = true;
       _bannerMessage = null;
     });
-    final bool started = await payment.purchaseSubscription(product);
+    bool started = false;
+    try {
+      started = await payment.purchaseSubscription(product);
+    } catch (error) {
+      debugPrint('Could not start subscription purchase: ${error.runtimeType}');
+    }
     if (!mounted) {
       return;
     }
@@ -83,9 +119,9 @@ class _RemoveAdsSubscriptionSectionState
   Future<void> _launchLegalUrl(Uri uri) async {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('링크를 열 수 없습니다.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('링크를 열 수 없습니다.')));
       }
     }
   }
@@ -138,17 +174,17 @@ class _RemoveAdsSubscriptionSectionState
       }
     });
 
-    ref.listen<AsyncValue<ProductDetails?>>(
-      subscriptionStoreProductProvider,
-      (AsyncValue<ProductDetails?>? previous, AsyncValue<ProductDetails?> next) {
-        if (!mounted) {
-          return;
-        }
-        if (next.valueOrNull != null && _showProductFetchFailureUi) {
-          setState(() => _showProductFetchFailureUi = false);
-        }
-      },
-    );
+    ref.listen<AsyncValue<ProductDetails?>>(subscriptionStoreProductProvider, (
+      AsyncValue<ProductDetails?>? previous,
+      AsyncValue<ProductDetails?> next,
+    ) {
+      if (!mounted) {
+        return;
+      }
+      if (next.valueOrNull != null && _showProductFetchFailureUi) {
+        setState(() => _showProductFetchFailureUi = false);
+      }
+    });
 
     final bool loadingStore = productAsync.isLoading;
     final ProductDetails? product = productAsync.valueOrNull;
@@ -213,10 +249,11 @@ class _RemoveAdsSubscriptionSectionState
                         ),
                       ],
                       if (_showProductFetchFailureUi &&
-                          (productAsync.hasError || product == null)) ...<Widget>[
+                          (productAsync.hasError ||
+                              product == null)) ...<Widget>[
                         const SizedBox(height: 12),
                         Text(
-                          '상품 정보를 불러오지 못했습니다.',
+                          '상품 정보를 불러오지 못했습니다. 다시 시도해 주세요.',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.red.shade800,
@@ -258,18 +295,14 @@ class _RemoveAdsSubscriptionSectionState
                         )
                       else
                         FilledButton(
-                          onPressed: (isSubscribed ||
-                                  _buying ||
-                                  loadingStore ||
-                                  (_showProductFetchFailureUi &&
-                                      (product == null || productAsync.hasError)))
+                          onPressed: (isSubscribed || _buying || loadingStore)
                               ? null
                               : () => _onSubscribePressed(
-                                    loadingStore: loadingStore,
-                                    isSubscribed: isSubscribed,
-                                    productAsync: productAsync,
-                                    payment: payment,
-                                  ),
+                                  loadingStore: loadingStore,
+                                  isSubscribed: isSubscribed,
+                                  productAsync: productAsync,
+                                  payment: payment,
+                                ),
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFFED5151),
                             foregroundColor: Colors.white,
@@ -287,29 +320,16 @@ class _RemoveAdsSubscriptionSectionState
                                     color: Colors.white,
                                   ),
                                 )
-                              : _showProductFetchFailureUi &&
-                                      (product == null ||
-                                          productAsync.hasError)
-                                  ? Text(
-                                      '상품 정보 없음',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: ketchupContentWeight(
-                                          context,
-                                        ),
-                                      ),
-                                    )
-                                  : Text(
-                                      '광고 제거 - ₩1,100/월',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: ketchupContentWeight(
-                                          context,
-                                        ),
-                                      ),
-                                    ),
+                              : Text(
+                                  product == null
+                                      ? '광고 제거'
+                                      : '광고 제거 - ${product.price}/월',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: ketchupContentWeight(context),
+                                  ),
+                                ),
                         ),
                       const SizedBox(height: 12),
                       TextButton(
@@ -340,7 +360,8 @@ class _RemoveAdsSubscriptionSectionState
                     runSpacing: 6,
                     children: <Widget>[
                       TextButton(
-                        onPressed: () => unawaited(_launchLegalUrl(_removeAdsLegalUri)),
+                        onPressed: () =>
+                            unawaited(_launchLegalUrl(_removeAdsLegalUri)),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
@@ -358,7 +379,9 @@ class _RemoveAdsSubscriptionSectionState
                         '·',
                         style: TextStyle(
                           fontSize: 13.5,
-                          color: const Color(0xFF5C5C5C).withValues(alpha: 0.55),
+                          color: const Color(
+                            0xFF5C5C5C,
+                          ).withValues(alpha: 0.55),
                           height: 1,
                         ),
                       ),

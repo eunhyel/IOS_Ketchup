@@ -57,13 +57,31 @@ class DiaryPdfExportService {
     }
 
     final pw.Document doc = pw.Document();
-    for (final Uint8List png in pages) {
+    for (int index = 0; index < pages.length; index++) {
+      final DateTime date = sorted[index].date;
+      final String month = date.month.toString().padLeft(2, '0');
+      final String day = date.day.toString().padLeft(2, '0');
       doc.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
           build: (pw.Context ctx) {
-            return pw.Center(
-              child: pw.Image(pw.MemoryImage(png), fit: pw.BoxFit.contain),
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                pw.Expanded(
+                  child: pw.Center(
+                    child: pw.Image(
+                      pw.MemoryImage(pages[index]),
+                      fit: pw.BoxFit.contain,
+                    ),
+                  ),
+                ),
+                pw.SizedBox(height: 12),
+                pw.Text(
+                  '${date.year}-$month-$day',
+                  style: pw.TextStyle(fontSize: 11, color: PdfColors.grey800),
+                ),
+              ],
             );
           },
         ),

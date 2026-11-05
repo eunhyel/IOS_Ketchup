@@ -1,3 +1,4 @@
+import 'package:ketchup_flutter/src/core/storage/app_documents.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -9,7 +10,6 @@ import 'package:ketchup_flutter/src/features/diary/data/local/diary_local_dataso
 import 'package:ketchup_flutter/src/features/diary/domain/diary_entry.dart';
 import 'package:ketchup_flutter/src/features/diary/data/local/diary_image_paths.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 /// Firebase Firestore 기반 일기 동기화 (Android 권장). iOS Flutter 빌드에서도 동일 코드로 동작하며,
 /// 네이티브 iOS 앱은 별도 iCloud 정책을 택할 수 있습니다.
@@ -20,17 +20,40 @@ class FirestoreDiarySyncService {
     required FirebaseFirestore firestore,
     required FirebaseAuth auth,
     required DiaryLocalDataSource diaryLocal,
-  })  : _firestore = firestore,
-        _auth = auth,
-        _diaryLocal = diaryLocal;
+  }) : _firestore = firestore,
+       _auth = auth,
+       _diaryLocal = diaryLocal,
+       _ownerUid = AppDocuments.accountUid,
+       _session = AppDocuments.generation;
 
   final FirebaseFirestore _firestore;
   final FirebaseAuth _auth;
   final DiaryLocalDataSource _diaryLocal;
+  final String? _ownerUid;
+  final int _session;
+  int _epoch = 0;
+  Future<void> _applications = Future<void>.value();
+  bool _valid(int epoch) =>
+      epoch == _epoch &&
+      _session == AppDocuments.generation &&
+      _activeUid != null &&
+      _activeUid == _ownerUid &&
+      _auth.currentUser?.uid == _ownerUid &&
+      !_suppressRemoteApplyAfterLocalReset;
+
+  Future<void> _enqueue(DocumentSnapshot<Map<String, dynamic>> doc, int epoch) {
+    _applications = _applications
+        .then((_) async {
+          if (_valid(epoch)) await _applyRemoteDoc(doc, epoch);
+        })
+        .catchError((Object e, StackTrace st) {
+          debugPrint('Remote apply failed: $e');
+        });
+    return _applications;
+  }
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _sub;
   Timer? _refreshDebounce;
-  bool _applyingRemote = false;
   String? _activeUid;
 
   /// 로컬에서 삭제하는 동안 Firestore가 아직 `deleted: false`인 캐시 스냅을 보내면
@@ -38,7 +61,7 @@ class FirestoreDiarySyncService {
   final Set<String> _suppressStaleNonDeletedApply = <String>{};
 
   /// 백업 화면 「초기화」로 로컬만 비울 때, 곧바로 Firestore에서 일기를 다시 받지 않도록 합니다.
-  /// [start]에서 `enabled: false`(로그아웃 등)이면 해제됩니다.
+  /// 초기화가 완전히 성공할 때만 영속 차단을 해제합니다.
   bool _suppressRemoteApplyAfterLocalReset = false;
 
   /// 원격 반영 후 로컬 목록 갱신(디바운스).
@@ -55,37 +78,43 @@ class FirestoreDiarySyncService {
 
   Future<void> start({required bool enabled}) async {
     await stop();
-    if (!enabled) {
-      _suppressRemoteApplyAfterLocalReset = false;
+    if (!enabled || _suppressRemoteApplyAfterLocalReset) {
       return;
     }
     final User? user = _auth.currentUser;
-    if (user == null) {
+    if (user == null ||
+        user.uid != _ownerUid ||
+        _session != AppDocuments.generation) {
       debugPrint('[sync] 로그인 필요 — 클라우드 동기화 대기');
       return;
     }
     _activeUid = user.uid;
-    final CollectionReference<Map<String, dynamic>> col = _entriesCol(user.uid)!;
+    final epoch = _epoch;
+    final CollectionReference<Map<String, dynamic>> col = _entriesCol(
+      user.uid,
+    )!;
 
-    _sub = col.snapshots(includeMetadataChanges: false).listen(
-      (QuerySnapshot<Map<String, dynamic>> snap) async {
-        if (_applyingRemote) {
-          return;
-        }
-        for (final DocumentChange change in snap.docChanges) {
-          final DocumentSnapshot<Map<String, dynamic>> doc =
-              change.doc as DocumentSnapshot<Map<String, dynamic>>;
-          if (!doc.exists) {
-            continue;
-          }
-          await _applyRemoteDoc(doc);
-        }
-        _scheduleRefresh();
-      },
-      onError: (Object e, StackTrace st) {
-        debugPrint('[sync] 스냅샷 오류: $e $st');
-      },
-    );
+    _sub = col
+        .snapshots(includeMetadataChanges: false)
+        .listen(
+          (QuerySnapshot<Map<String, dynamic>> snap) async {
+            if (!_valid(epoch)) {
+              return;
+            }
+            for (final DocumentChange change in snap.docChanges) {
+              final DocumentSnapshot<Map<String, dynamic>> doc =
+                  change.doc as DocumentSnapshot<Map<String, dynamic>>;
+              if (!doc.exists) {
+                continue;
+              }
+              await _enqueue(doc, epoch);
+            }
+            _scheduleRefresh();
+          },
+          onError: (Object e, StackTrace st) {
+            debugPrint('[sync] 스냅샷 오류: $e $st');
+          },
+        );
 
     // 재설치 직후 등 로컬 Isar가 비어 있을 때, 첫 스냅샷에서 docChanges가 비거나
     // 캐시 메타데이터만 오는 경우가 있어 원격 전체를 한 번 확실히 적용합니다.
@@ -95,14 +124,12 @@ class FirestoreDiarySyncService {
       } else {
         try {
           final QuerySnapshot<Map<String, dynamic>> full = await col.get();
-          _applyingRemote = true;
-          try {
-            for (final QueryDocumentSnapshot<Map<String, dynamic>> d in full.docs) {
-              await _applyRemoteDoc(d);
-            }
-          } finally {
-            _applyingRemote = false;
+
+          for (final QueryDocumentSnapshot<Map<String, dynamic>> d
+              in full.docs) {
+            await _enqueue(d, epoch);
           }
+
           _scheduleRefresh();
         } catch (e, st) {
           debugPrint('[sync] 초기 원격 전체 로드 실패: $e $st');
@@ -110,21 +137,27 @@ class FirestoreDiarySyncService {
       }
     }
 
-    await pushAllLocal();
+    if (_valid(epoch)) await pushAllLocal();
   }
 
   void _scheduleRefresh() {
+    final epoch = _epoch;
+    if (!_valid(epoch)) return;
     _refreshDebounce?.cancel();
     _refreshDebounce = Timer(const Duration(milliseconds: 350), () {
-      onRemoteApplied?.call();
+      if (_valid(epoch)) onRemoteApplied?.call();
     });
   }
 
   Future<void> stop() async {
+    _epoch++;
+    _activeUid = null;
     _refreshDebounce?.cancel();
     _refreshDebounce = null;
-    await _sub?.cancel();
+    final sub = _sub;
     _sub = null;
+    await sub?.cancel();
+    await _applications;
     _activeUid = null;
   }
 
@@ -133,8 +166,11 @@ class FirestoreDiarySyncService {
     if (user == null) {
       return;
     }
+    final epoch = _epoch;
+    if (!_valid(epoch)) return;
     final List<DiaryEntry> all = await _diaryLocal.fetchAll();
     for (final DiaryEntry e in all) {
+      if (!_valid(epoch)) return;
       await pushUpsert(e);
     }
     _scheduleRefresh();
@@ -142,12 +178,18 @@ class FirestoreDiarySyncService {
 
   Future<void> pushUpsert(DiaryEntry entry) async {
     final User? user = _auth.currentUser;
-    if (user == null || _activeUid != user.uid) {
+    final epoch = _epoch;
+    if (user == null || !_valid(epoch)) {
       return;
     }
     final String syncKey = await _diaryLocal.getOrAssignSyncKey(entry.id);
-    final String? imageB64 = await _diaryLocal.readImageBase64ForSync(entry.imagePath);
-    final CollectionReference<Map<String, dynamic>> col = _entriesCol(user.uid)!;
+    final String? imageB64 = await _diaryLocal.readImageBase64ForSync(
+      entry.imagePath,
+    );
+    if (!_valid(epoch)) return;
+    final CollectionReference<Map<String, dynamic>> col = _entriesCol(
+      user.uid,
+    )!;
     final int updatedAtMs = entry.updatedAt.toUtc().millisecondsSinceEpoch;
 
     await col.doc(syncKey).set(<String, dynamic>{
@@ -170,7 +212,10 @@ class FirestoreDiarySyncService {
     _suppressStaleNonDeletedApply.add(syncKey);
   }
 
-  void endLocalDeleteSuppressionSoon(String syncKey, {Duration after = const Duration(seconds: 3)}) {
+  void endLocalDeleteSuppressionSoon(
+    String syncKey, {
+    Duration after = const Duration(seconds: 3),
+  }) {
     if (syncKey.isEmpty) {
       return;
     }
@@ -179,12 +224,18 @@ class FirestoreDiarySyncService {
     });
   }
 
-  Future<void> pushTombstone({required String syncKey, required DateTime deletedAt}) async {
+  Future<void> pushTombstone({
+    required String syncKey,
+    required DateTime deletedAt,
+  }) async {
     final User? user = _auth.currentUser;
-    if (user == null || _activeUid != user.uid) {
+    final epoch = _epoch;
+    if (user == null || !_valid(epoch)) {
       return;
     }
-    final CollectionReference<Map<String, dynamic>> col = _entriesCol(user.uid)!;
+    final CollectionReference<Map<String, dynamic>> col = _entriesCol(
+      user.uid,
+    )!;
     final int ms = deletedAt.toUtc().millisecondsSinceEpoch;
     await col.doc(syncKey).set(<String, dynamic>{
       'syncKey': syncKey,
@@ -193,8 +244,11 @@ class FirestoreDiarySyncService {
     }, SetOptions(merge: true));
   }
 
-  Future<void> _applyRemoteDoc(DocumentSnapshot<Map<String, dynamic>> doc) async {
-    if (_suppressRemoteApplyAfterLocalReset) {
+  Future<void> _applyRemoteDoc(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+    int epoch,
+  ) async {
+    if (!_valid(epoch)) {
       return;
     }
     final Map<String, dynamic>? data = doc.data();
@@ -226,12 +280,10 @@ class FirestoreDiarySyncService {
       if (localMs >= remoteMs) {
         return;
       }
-      _applyingRemote = true;
-      try {
-        await _diaryLocal.deleteLocalAndMeta(localId);
-      } finally {
-        _applyingRemote = false;
-      }
+
+      if (!_valid(epoch)) return;
+      await _diaryLocal.deleteLocalAndMeta(localId);
+
       return;
     }
 
@@ -244,8 +296,12 @@ class FirestoreDiarySyncService {
     }
     final DateTime date = dateTs.toDate().toLocal();
     final DateTime createdAt = createdTs.toDate().toLocal();
-    final DateTime updatedAt = DateTime.fromMillisecondsSinceEpoch(remoteMs, isUtc: true).toLocal();
+    final DateTime updatedAt = DateTime.fromMillisecondsSinceEpoch(
+      remoteMs,
+      isUtc: true,
+    ).toLocal();
 
+    if (!_valid(epoch)) return;
     String? imagePath;
     final String? b64 = data['imageBase64'] as String?;
     if (b64 != null && b64.isNotEmpty) {
@@ -260,48 +316,45 @@ class FirestoreDiarySyncService {
           return;
         }
       }
-      _applyingRemote = true;
-      try {
-        await _diaryLocal.replaceFromRemote(
-          localId: localId,
-          text: text,
-          date: date,
-          defaultImage: defaultImage,
-          imagePath: imagePath ?? local?.imagePath,
-          createdAt: createdAt,
-          updatedAt: updatedAt,
-        );
-      } finally {
-        _applyingRemote = false;
-      }
-      return;
-    }
 
-    _applyingRemote = true;
-    try {
-      await _diaryLocal.insertFromRemote(
-        syncKey: syncKey,
+      if (!_valid(epoch)) return;
+      await _diaryLocal.replaceFromRemote(
+        localId: localId,
         text: text,
         date: date,
         defaultImage: defaultImage,
-        imagePath: imagePath,
+        imagePath: imagePath ?? local?.imagePath,
         createdAt: createdAt,
         updatedAt: updatedAt,
       );
-    } finally {
-      _applyingRemote = false;
+
+      return;
     }
+
+    if (!_valid(epoch)) return;
+    await _diaryLocal.insertFromRemote(
+      syncKey: syncKey,
+      text: text,
+      date: date,
+      defaultImage: defaultImage,
+      imagePath: imagePath,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
   }
 
   /// 임시 디렉터리가 아닌 **Documents/ketchup_images** 에 저장해 앱 재시작 후에도 유지됩니다.
   Future<String?> _persistRemoteImageInDocuments(String b64) async {
     try {
-      final Directory doc = await getApplicationDocumentsDirectory();
+      final Directory doc = AppDocuments.directory();
       final Directory imgDir = Directory(p.join(doc.path, 'ketchup_images'));
       if (!await imgDir.exists()) {
         await imgDir.create(recursive: true);
       }
-      final String dest = p.join(imgDir.path, 'sync_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final String dest = p.join(
+        imgDir.path,
+        'sync_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
       await File(dest).writeAsBytes(base64Decode(b64));
       return DiaryImagePaths.toStored(dest);
     } on Object catch (e) {

@@ -1,3 +1,4 @@
+import 'package:ketchup_flutter/src/core/storage/app_documents.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -6,7 +7,6 @@ import 'package:isar_community/isar.dart';
 import 'package:ketchup_flutter/src/features/diary/data/local/isar_diary_entry.dart';
 import 'package:ketchup_flutter/src/features/settings/data/local/isar_app_settings.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 /// Imports `ketchup_backup_v1.json` (schema v1) into an open [Isar].
 class LegacyBackupImport {
@@ -75,7 +75,7 @@ class LegacyBackupImport {
     Isar isar,
     List<Map<String, dynamic>> rawEntries,
   ) async {
-    final Directory doc = await getApplicationDocumentsDirectory();
+    final Directory doc = AppDocuments.directory();
     final Directory imgDir = Directory(p.join(doc.path, 'ketchup_images'));
     if (!await imgDir.exists()) {
       await imgDir.create(recursive: true);

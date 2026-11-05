@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +52,39 @@ class _BootstrapApp extends StatefulWidget {
 
 class _BootstrapAppState extends State<_BootstrapApp> {
   Isar? _isar;
-  bool _firebaseOk = false;
+  StreamSubscription<User?>? _authSubscription;
+  Future<void> _accountTransition = Future<void>.value();
+  String? _accountError;
+
+  @override
+  void dispose() {
+    unawaited(_authSubscription?.cancel());
+    super.dispose();
+  }
+
+  void _onAccountChanged(User? user) {
+    _accountTransition = _accountTransition
+        .then((_) async {
+          if (!mounted ||
+              (AppDocuments.accountUid == user?.uid && _isar != null)) {
+            return;
+          }
+          AppDocuments.generation++;
+          setState(() {
+            _isar = null;
+            _accountError = null;
+          });
+          await WidgetsBinding.instance.endOfFrame;
+          await AppDocuments.selectAccount(user?.uid);
+          final db = await AppIsar.open();
+          if (mounted) setState(() => _isar = db);
+        })
+        .catchError((Object error, StackTrace stack) {
+          if (mounted) {
+            setState(() => _accountError = '계정 데이터를 열지 못했습니다. 앱을 다시 실행해 주세요.');
+          }
+        });
+  }
 
   @override
   void initState() {
@@ -77,14 +111,21 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       } catch (e, st) {
         debugPrint('Firebase.initializeApp 실패(google-services 등 확인): $e $st');
       }
+      await AppDocuments.selectAccount(
+        firebaseOk ? FirebaseAuth.instance.currentUser?.uid : null,
+      );
       final Isar isar = await AppIsar.open();
       if (!mounted) {
         return;
       }
       setState(() {
-        _firebaseOk = firebaseOk;
         _isar = isar;
       });
+      if (firebaseOk) {
+        _authSubscription = FirebaseAuth.instance.authStateChanges().listen(
+          _onAccountChanged,
+        );
+      }
     } catch (e, st) {
       debugPrint('앱 초기화 실패(Isar 등): $e $st');
     } finally {
@@ -101,10 +142,13 @@ class _BootstrapAppState extends State<_BootstrapApp> {
         builder: (BuildContext context, Widget? child) {
           return SafeArea(child: child ?? const SizedBox.shrink());
         },
-        home: const _BootstrapLoadingScreen(),
+        home: _accountError == null
+            ? const _BootstrapLoadingScreen()
+            : Scaffold(body: Center(child: Text(_accountError!))),
       );
     }
     return ProviderScope(
+      key: ValueKey(isar.name),
       overrides: <Override>[
         isarControllerProvider.overrideWith((Ref ref) => IsarController(isar)),
       ],

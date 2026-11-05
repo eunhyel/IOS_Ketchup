@@ -4,7 +4,7 @@
 월별 일기, 사진 첨부, 잠금, 글꼴 설정, Google Drive 백업, Firestore 동기화,
 PDF 내보내기, 광고 및 광고 제거 구독을 구현합니다.
 
-> 기준: 2026-11-04 저장소 코드, 앱 버전 `1.1.9+18`.
+> 기준: 2026-11-04 저장소 코드, 앱 버전 `1.1.11+19`.
 > 구현 현황을 설명하며 실제 기기·스토어·클라우드 운영 검증 완료를 뜻하지 않습니다.
 
 ## 개발 환경
@@ -49,8 +49,9 @@ ios/Ketchup/SceneDelegate.swift  CloudKit·Realm·공유 네이티브 연동
 기능은 `presentation`, `data`, 필요 시 `domain`으로 나뉘며 일기는
 `DiaryRepository` 인터페이스를 통해 저장합니다.
 작성·수정은 로컬 저장과 목록 갱신을 먼저 처리하고 원격 전송을 뒤에서 실행합니다.
+비로그인 보관함과 Google 계정별 DB·사진·임시저장을 분리하며 기존 일기는 자동 업로드하지 않습니다.
 Drive 파일 백업과 Firestore 동기화는 별개입니다.
-iCloud 경로도 구현되어 있으나 설정 UI는 iOS debug/profile 빌드에서만 보입니다.
+iCloud는 비로그인 보관함 전용이며 설정 UI는 iOS debug/profile 빌드에서만 보입니다.
 
 ## 검증
 

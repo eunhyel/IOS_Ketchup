@@ -4,7 +4,7 @@
 
 ## 로컬 저장
 
-Documents의 `ketchup.isar`에 다음 컬렉션을 등록합니다.
+비로그인 보관함은 Documents의 `ketchup.isar`를 유지합니다. 로그인 보관함은 `Documents/accounts/ketchup_<UID SHA-256>/ketchup_<UID SHA-256>.isar`를 사용합니다. 각 DB에 다음 컬렉션을 등록합니다.
 
 | 모델 | 주요 필드와 역할 |
 |---|---|
@@ -30,12 +30,12 @@ Documents의 `ketchup.isar`에 다음 컬렉션을 등록합니다.
 | `removeAdsSubscriptionActive` | 스토어 구독에 의한 광고 제거 상태 |
 
 뒤의 다섯 bool 필드는 Isar에서 nullable이며 기존 DB에 값이 없으면 false로 읽습니다.
-`blockRemoteDiaryRestore` 필드는 존재하지만 현재 초기화 화면은 이 값을 true로 설정하지 않습니다.
+초기화는 삭제 전에 `blockRemoteDiaryRestore`를 true로 저장합니다. 원격 정리가 실패하면 재실행 후에도 차단을 유지합니다.
 
 ### 별도 파일
 
-- `ketchup_lock.json`: 비밀번호의 SHA-256 해시.
-- `ketchup_compose_draft.json`: 신규 작성 임시 저장. `v`, `text`, `dateMs`, `defaultImage`, `imagePath`, `placeholder`.
+- 보관함별 디렉터리의 `ketchup_lock.json`: 비밀번호의 SHA-256 해시.
+- 보관함별 디렉터리의 `ketchup_compose_draft.json`: 신규 작성 임시 저장. `v`, `text`, `dateMs`, `defaultImage`, `imagePath`, `placeholder`.
 - 위 두 JSON 파일 자체는 현재 Drive ZIP에 포함되지 않습니다.
 
 ## 현재 백업: ZIP 안의 v2 데이터
@@ -55,7 +55,7 @@ ketchup_backup.zip
 |---|---|
 | `schemaVersion` | `2` |
 | `exportedAt` | UTC ISO 8601 문자열 |
-| `appVersion` | `APP_VERSION` 빌드 정의 또는 기본값 `1.1.9` |
+| `appVersion` | `APP_VERSION` 빌드 정의 또는 기본값 `1.1.11` |
 | `files` | 파일명 → `{ "sha256": 문자열, "size": 바이트 수 }` |
 
 이미지 번들은 `{ "schemaVersion": 1, "files": { "파일명": "Base64 데이터" } }` 구조입니다.

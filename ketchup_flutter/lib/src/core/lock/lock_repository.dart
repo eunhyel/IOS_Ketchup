@@ -1,9 +1,9 @@
+import 'package:ketchup_flutter/src/core/storage/app_documents.dart';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 
 /// 로컬(앱 문서 디렉토리) 파일에 암호 해시를 저장합니다.
 /// - iOS: `UserDefaults` 기반
@@ -12,7 +12,7 @@ class LockRepository {
   static const String fileName = 'ketchup_lock.json';
 
   Future<File> _lockFile() async {
-    final Directory dir = await getApplicationDocumentsDirectory();
+    final Directory dir = AppDocuments.directory();
     return File('${dir.path}/$fileName');
   }
 
@@ -27,7 +27,8 @@ class LockRepository {
       if (!await f.exists()) {
         return null;
       }
-      final Map<String, dynamic> json = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
+      final Map<String, dynamic> json =
+          jsonDecode(await f.readAsString()) as Map<String, dynamic>;
       final Object? hash = json['hash'];
       return hash is String ? hash : null;
     } on Object {
@@ -51,7 +52,5 @@ class LockRepository {
   }
 }
 
-final Provider<LockRepository> lockRepositoryProvider = Provider<LockRepository>(
-  (Ref ref) => LockRepository(),
-);
-
+final Provider<LockRepository> lockRepositoryProvider =
+    Provider<LockRepository>((Ref ref) => LockRepository());

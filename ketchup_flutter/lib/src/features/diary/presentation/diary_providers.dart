@@ -1,3 +1,5 @@
+import 'package:ketchup_flutter/src/core/analytics/diary_analytics.dart';
+import 'package:ketchup_flutter/src/core/storage/app_documents.dart';
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
@@ -12,7 +14,6 @@ import 'package:ketchup_flutter/src/features/diary/data/diary_repository.dart';
 import 'package:ketchup_flutter/src/features/diary/data/isar_diary_repository.dart';
 import 'package:ketchup_flutter/src/features/diary/domain/diary_entry.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:ketchup_flutter/src/features/settings/domain/app_settings.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart'
     show appSettingsProvider;
@@ -62,9 +63,10 @@ class _AsyncSemaphore {
   }
 }
 
-final Provider<DiaryRepository> diaryRepositoryProvider = Provider<DiaryRepository>(
-  (Ref ref) => IsarDiaryRepository(ref.watch(diaryLocalDataSourceProvider)),
-);
+final Provider<DiaryRepository> diaryRepositoryProvider =
+    Provider<DiaryRepository>(
+      (Ref ref) => IsarDiaryRepository(ref.watch(diaryLocalDataSourceProvider)),
+    );
 
 class IcloudHydrationStats {
   const IcloudHydrationStats({
@@ -85,10 +87,40 @@ class IcloudHydrationStats {
 }
 
 class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
-  DiaryEntriesNotifier(this._ref, this._repository) : super(const AsyncValue.loading()) {
+  DiaryEntriesNotifier(this._ref, this._repository)
+    : super(const AsyncValue.loading()) {
     load();
   }
 
+  final int _session = AppDocuments.generation;
+  int _remoteEpoch = 0;
+  final Set<Future<void>> _icloudWrites = {};
+  Future<void> cancelRemoteWork() async {
+    _remoteEpoch++;
+    await Future.wait(
+      _icloudWrites.toList(),
+    ).timeout(const Duration(seconds: 15));
+  }
+
+  Future<void> _trackIcloudWrite(Future<void> Function() action) async {
+    final work = action();
+    _icloudWrites.add(work);
+    try {
+      await work;
+    } finally {
+      _icloudWrites.remove(work);
+    }
+  }
+
+  bool get _remoteAllowed =>
+      mounted &&
+      _session == AppDocuments.generation &&
+      _ref.read(appSettingsProvider).valueOrNull?.blockRemoteDiaryRestore !=
+          true;
+  bool get _icloudAllowed =>
+      _remoteAllowed &&
+      AppDocuments.accountUid == null &&
+      _ref.read(appSettingsProvider).valueOrNull?.useIcloudSync == true;
   final Ref _ref;
   final DiaryRepository _repository;
 
@@ -116,6 +148,7 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
       imagePath: imagePath,
     );
     // 메인 그리드는 로컬 저장 직후 바로 갱신. Firestore/iCloud 는 네트워크 지연 없이 뒤에서 실행.
+    unawaited(DiaryAnalytics.logDiaryCreated());
     await load();
     unawaited(_pushRemoteAfterLocalSave(saved));
   }
@@ -155,19 +188,22 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
       // 스냅이 `deleted: false`만 오면 insertFromRemote로 행이 부활해 삭제가 한 번에 안 끝난 것처럼 보일 수 있음.
       if (syncKey != null) {
         try {
-          await sync.pushTombstone(
-            syncKey: syncKey,
-            deletedAt: DateTime.now(),
-          ).timeout(const Duration(seconds: 2));
+          await sync
+              .pushTombstone(syncKey: syncKey, deletedAt: DateTime.now())
+              .timeout(const Duration(seconds: 2));
         } on Object catch (e, st) {
           debugPrint('[sync] tombstone 실패: $e $st');
         }
       }
-      if (syncKey != null && Platform.isIOS) {
-        final AppSettings? icloudOn = _ref.read(appSettingsProvider).valueOrNull;
+      if (syncKey != null && Platform.isIOS && _icloudAllowed) {
+        final AppSettings? icloudOn = _ref
+            .read(appSettingsProvider)
+            .valueOrNull;
         if (icloudOn?.useIcloudSync == true) {
           try {
-            await IcloudDaySyncBridge.deleteDay(syncKey).timeout(const Duration(seconds: 8));
+            await IcloudDaySyncBridge.deleteDay(
+              syncKey,
+            ).timeout(const Duration(seconds: 8));
           } on Object catch (e, st) {
             debugPrint('[icloud] delete 실패: $e $st');
           }
@@ -183,6 +219,7 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
   }
 
   Future<void> _pushUpsertQuietly(DiaryEntry entry) async {
+    if (!_remoteAllowed) return;
     try {
       await _ref.read(firestoreDiarySyncProvider).pushUpsert(entry);
     } on Object catch (e, st) {
@@ -191,7 +228,8 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
   }
 
   Future<void> _pushIcloudQuietly(DiaryEntry entry) async {
-    if (!Platform.isIOS) {
+    final epoch = _remoteEpoch;
+    if (!Platform.isIOS || !_icloudAllowed) {
       return;
     }
     final AppSettings? settings = _ref.read(appSettingsProvider).valueOrNull;
@@ -200,24 +238,33 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
     }
     try {
       final String syncKey = await _repository.getOrAssignSyncKey(entry.id);
-      final DiaryLocalDataSource local = _ref.read(diaryLocalDataSourceProvider);
-      final String? imageB64 = await local.readImageBase64ForSync(entry.imagePath);
-      await IcloudDaySyncBridge.upsertDay(
-        syncKey: syncKey,
-        id: entry.id,
-        text: entry.text,
-        dateMs: entry.date.millisecondsSinceEpoch,
-        defaultImage: entry.defaultImage,
-        imageBase64: imageB64,
+      final DiaryLocalDataSource local = _ref.read(
+        diaryLocalDataSourceProvider,
       );
+      final String? imageB64 = await local.readImageBase64ForSync(
+        entry.imagePath,
+      );
+      if (!_icloudAllowed || epoch != _remoteEpoch) return;
+      await _trackIcloudWrite(() async {
+        await IcloudDaySyncBridge.upsertDay(
+          syncKey: syncKey,
+          id: entry.id,
+          text: entry.text,
+          dateMs: entry.date.millisecondsSinceEpoch,
+          defaultImage: entry.defaultImage,
+          imageBase64: imageB64,
+        );
+      });
     } on Object catch (e, st) {
       debugPrint('[icloud] push 실패: $e $st');
     }
   }
 
   /// iCloud 동기화를 켠 뒤에 한 번 호출해 로컬에 있는 일기를 모두 CloudKit에 올립니다.
-  Future<void> icloudPushAllLocal({void Function(int current, int total)? onProgress}) async {
-    if (!Platform.isIOS) {
+  Future<void> icloudPushAllLocal({
+    void Function(int current, int total)? onProgress,
+  }) async {
+    if (!Platform.isIOS || !_icloudAllowed) {
       return;
     }
     final AppSettings? settings = _ref.read(appSettingsProvider).valueOrNull;
@@ -251,7 +298,9 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
             // 너무 잦은 로그는 오히려 느리게 할 수 있어 50개 단위로만 출력합니다.
             if (pushedOk == 1 || pushedOk % 50 == 0) {
               final elapsed = DateTime.now().difference(start);
-              debugPrint('[icloud] pushAllLocal success $pushedOk/$total elapsed=${elapsed.inSeconds}s');
+              debugPrint(
+                '[icloud] pushAllLocal success $pushedOk/$total elapsed=${elapsed.inSeconds}s',
+              );
             }
           } on TimeoutException catch (_) {
             debugPrint('[icloud] pushAll local entry=${e.id} timeout');
@@ -273,7 +322,8 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
   }
 
   Future<IcloudHydrationStats> hydrateFromIcloudWithoutGoogle() async {
-    if (_ref.read(appSettingsProvider).valueOrNull?.blockRemoteDiaryRestore == true) {
+    final epoch = _remoteEpoch;
+    if (!_icloudAllowed) {
       debugPrint('[icloud] hydrate skipped (로컬만 초기화 유지)');
       return const IcloudHydrationStats(
         fetchedRows: 0,
@@ -284,15 +334,16 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
         imageSaveFailedRows: 0,
       );
     }
-    final List<Map<String, dynamic>> rows = await IcloudDaySyncBridge.fetchDays().timeout(
-      const Duration(seconds: 120),
-      onTimeout: () {
-        debugPrint('[icloud] fetchDays timeout');
-        return <Map<String, dynamic>>[];
-      },
-    );
+    final List<Map<String, dynamic>> rows =
+        await IcloudDaySyncBridge.fetchDays().timeout(
+          const Duration(seconds: 120),
+          onTimeout: () {
+            debugPrint('[icloud] fetchDays timeout');
+            return <Map<String, dynamic>>[];
+          },
+        );
     debugPrint('[icloud] fetched rows: ${rows.length}');
-    if (rows.isEmpty) {
+    if (rows.isEmpty || !_icloudAllowed || epoch != _remoteEpoch) {
       return const IcloudHydrationStats(
         fetchedRows: 0,
         appliedRows: 0,
@@ -305,7 +356,7 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
 
     // 이미지 저장은 1) 앱 문서 디렉토리 조회/존재확인 중복, 2) base64 디코드 CPU,
     // 3) 파일 I/O 순차 대기로 인해 느려질 수 있어 병렬화합니다.
-    final Directory docDir = await getApplicationDocumentsDirectory();
+    final Directory docDir = AppDocuments.directory();
     final Directory imgDir = Directory(p.join(docDir.path, 'ketchup_images'));
     if (!await imgDir.exists()) {
       await imgDir.create(recursive: true);
@@ -330,10 +381,12 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
         final String text = (row['text'] as String?) ?? '';
         final int defaultImage = (row['defaultImage'] as num?)?.toInt() ?? 0;
         final int dateMs = (row['dateMs'] as num?)?.toInt() ?? 0;
-        final DateTime date =
-            dateMs > 0 ? DateTime.fromMillisecondsSinceEpoch(dateMs) : DateTime.now();
+        final DateTime date = dateMs > 0
+            ? DateTime.fromMillisecondsSinceEpoch(dateMs)
+            : DateTime.now();
         final String? imageBase64 = row['imageBase64'] as String?;
-        final bool hasImagePayload = imageBase64 != null && imageBase64.isNotEmpty;
+        final bool hasImagePayload =
+            imageBase64 != null && imageBase64.isNotEmpty;
         if (hasImagePayload) {
           withImagePayload += 1;
         } else {
@@ -357,14 +410,19 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
     const int maxConcurrentImageSaves = 4;
     final _AsyncSemaphore semaphore = _AsyncSemaphore(maxConcurrentImageSaves);
 
-    final List<Future<String?>> imageFutures = items.map((item) {
-      if (item.imageBase64 == null) {
-        return Future<String?>.value(null);
-      }
-      return semaphore.withPermit<String?>(() async {
-        return _persistIcloudImageIfNeeded(item.imageBase64!, imgDir: imgDir);
-      });
-    }).toList(growable: false);
+    final List<Future<String?>> imageFutures = items
+        .map((item) {
+          if (item.imageBase64 == null) {
+            return Future<String?>.value(null);
+          }
+          return semaphore.withPermit<String?>(() async {
+            return _persistIcloudImageIfNeeded(
+              item.imageBase64!,
+              imgDir: imgDir,
+            );
+          });
+        })
+        .toList(growable: false);
 
     final List<String?> imagePaths = await Future.wait(imageFutures);
     for (int i = 0; i < items.length; i++) {
@@ -383,6 +441,7 @@ class DiaryEntriesNotifier extends StateNotifier<AsyncValue<List<DiaryEntry>>> {
     for (int i = 0; i < items.length; i++) {
       final _IcloudHydrateItem item = items[i];
       try {
+        if (!_icloudAllowed || epoch != _remoteEpoch) break;
         await _repository.upsertFromIcloud(
           id: item.id,
           text: item.text,
@@ -445,7 +504,9 @@ class _IcloudHydrateItem {
   final String? imageBase64;
 }
 
-final StateNotifierProvider<DiaryEntriesNotifier, AsyncValue<List<DiaryEntry>>> diaryEntriesProvider =
+final StateNotifierProvider<DiaryEntriesNotifier, AsyncValue<List<DiaryEntry>>>
+diaryEntriesProvider =
     StateNotifierProvider<DiaryEntriesNotifier, AsyncValue<List<DiaryEntry>>>(
-  (Ref ref) => DiaryEntriesNotifier(ref, ref.watch(diaryRepositoryProvider)),
-);
+      (Ref ref) =>
+          DiaryEntriesNotifier(ref, ref.watch(diaryRepositoryProvider)),
+    );

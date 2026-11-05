@@ -1,3 +1,4 @@
+import 'package:ketchup_flutter/src/core/storage/app_documents.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
@@ -17,7 +18,6 @@ import 'package:ketchup_flutter/src/features/diary/domain/diary_entry.dart';
 import 'package:ketchup_flutter/src/features/diary/presentation/diary_providers.dart';
 import 'package:ketchup_flutter/src/features/settings/presentation/settings_providers.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 enum WriteEditMode { view, create, edit }
 
@@ -1001,7 +1001,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
         );
       },
     );
-    if (picked == null) {
+    if (picked == null || !mounted) {
       return;
     }
 
@@ -1021,10 +1021,10 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
     final XFile? picked = await ImagePicker().pickImage(
       source: ImageSource.gallery,
     );
-    if (picked == null) {
+    if (picked == null || !mounted) {
       return;
     }
-    final Directory dir = await getApplicationDocumentsDirectory();
+    final Directory dir = AppDocuments.directory();
     final Directory imgDir = Directory(p.join(dir.path, 'ketchup_images'));
     if (!await imgDir.exists()) {
       await imgDir.create(recursive: true);
@@ -1039,6 +1039,7 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
     // iOS 갤러리 임시 경로는 앱 재시작 후 사라질 수 있어 바이트로 문서 폴더에 저장
     final List<int> bytes = await picked.readAsBytes();
     await File(dest).writeAsBytes(bytes);
+    if (!mounted) return;
     setState(() {
       _imagePath = dest;
       _imageDirty = true;
@@ -1062,7 +1063,10 @@ class _WriteEditPageState extends ConsumerState<WriteEditPage>
 
   Future<void> _saveImpl() async {
     final bool removeAds =
-        ref.read(appSettingsProvider).valueOrNull?.removeAdsSubscriptionActive ??
+        ref
+            .read(appSettingsProvider)
+            .valueOrNull
+            ?.removeAdsSubscriptionActive ??
         false;
     if (_mode == WriteEditMode.edit) {
       if (!_isDirty) {

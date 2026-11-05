@@ -1,3 +1,4 @@
+import 'package:ketchup_flutter/src/core/storage/app_documents.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -24,6 +25,7 @@ class SyncHost extends ConsumerStatefulWidget {
 class _SyncHostState extends ConsumerState<SyncHost> {
   late final AppLifecycleListener _lifecycle;
   bool _hydratingIcloudWithoutGoogle = false;
+  Future<void> _configuration = Future<void>.value();
 
   @override
   void initState() {
@@ -44,30 +46,58 @@ class _SyncHostState extends ConsumerState<SyncHost> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<AppSettings>>(appSettingsProvider, (AsyncValue<AppSettings>? prev, AsyncValue<AppSettings> next) {
+    ref.listen<AsyncValue<AppSettings>>(appSettingsProvider, (
+      AsyncValue<AppSettings>? prev,
+      AsyncValue<AppSettings> next,
+    ) {
       _reconfigure();
     });
-    ref.listen<AsyncValue<User?>>(firebaseUserProvider, (AsyncValue<User?>? prev, AsyncValue<User?> next) {
+    ref.listen<AsyncValue<User?>>(firebaseUserProvider, (
+      AsyncValue<User?>? prev,
+      AsyncValue<User?> next,
+    ) {
       _reconfigure();
     });
     return widget.child;
   }
 
-  Future<void> _reconfigure() async {
+  Future<void> _reconfigure() {
+    _configuration = _configuration
+        .then((_) async {
+          if (mounted) await _configure();
+        })
+        .catchError((Object e, StackTrace st) {
+          debugPrint('Sync configuration failed: $e');
+        });
+    return _configuration;
+  }
+
+  Future<void> _configure() async {
     final FirestoreDiarySyncService sync = ref.read(firestoreDiarySyncProvider);
     sync.onRemoteApplied = () {
       unawaited(ref.read(diaryEntriesProvider.notifier).load());
     };
     final AppSettings? settings = ref.read(appSettingsProvider).valueOrNull;
     final User? user = ref.read(firebaseUserProvider).valueOrNull;
-    final bool enabled = user != null;
-    sync.setSuppressRemoteApplyFromPersistedSettings(settings?.blockRemoteDiaryRestore ?? false);
-    debugPrint('[sync] reconfigure firestore=${enabled ? "on" : "off"} uid=${user?.uid}');
+    final bool enabled =
+        user != null &&
+        user.uid == AppDocuments.accountUid &&
+        settings != null &&
+        !settings.blockRemoteDiaryRestore;
+    sync.setSuppressRemoteApplyFromPersistedSettings(
+      settings?.blockRemoteDiaryRestore ?? false,
+    );
+    debugPrint(
+      '[sync] reconfigure firestore=${enabled ? "on" : "off"} uid=${user?.uid}',
+    );
     await sync.start(enabled: enabled);
 
     // 재설치 복원 경로를 위해 Google 로그인 여부와 무관하게,
     // 로컬이 비어 있을 때만 iCloud hydrate를 시도합니다.
-    final bool shouldHydrateFromIcloud = Platform.isIOS &&
+    final bool shouldHydrateFromIcloud =
+        mounted &&
+        AppDocuments.accountUid == null &&
+        Platform.isIOS &&
         settings?.useIcloudSync == true &&
         settings?.blockRemoteDiaryRestore != true;
     if (shouldHydrateFromIcloud && !_hydratingIcloudWithoutGoogle) {
@@ -80,20 +110,22 @@ class _SyncHostState extends ConsumerState<SyncHost> {
           return;
         }
         // 채널 등록/CloudKit 응답 지연으로 첫 호출이 빈 결과일 수 있어 짧게 재시도합니다.
-        IcloudHydrationStats stats = await notifier.hydrateFromIcloudWithoutGoogle().timeout(
-          const Duration(seconds: 120),
-          onTimeout: () {
-            debugPrint('[icloud] sync_host hydrate timeout (first)');
-            return const IcloudHydrationStats(
-              fetchedRows: 0,
-              appliedRows: 0,
-              rowsWithImagePayload: 0,
-              rowsWithoutImagePayload: 0,
-              imageSavedRows: 0,
-              imageSaveFailedRows: 0,
+        IcloudHydrationStats stats = await notifier
+            .hydrateFromIcloudWithoutGoogle()
+            .timeout(
+              const Duration(seconds: 120),
+              onTimeout: () {
+                debugPrint('[icloud] sync_host hydrate timeout (first)');
+                return const IcloudHydrationStats(
+                  fetchedRows: 0,
+                  appliedRows: 0,
+                  rowsWithImagePayload: 0,
+                  rowsWithoutImagePayload: 0,
+                  imageSavedRows: 0,
+                  imageSaveFailedRows: 0,
+                );
+              },
             );
-          },
-        );
         if (stats.appliedRows == 0) {
           await Future<void>.delayed(const Duration(milliseconds: 700));
           stats = await notifier.hydrateFromIcloudWithoutGoogle().timeout(

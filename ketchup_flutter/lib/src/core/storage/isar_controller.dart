@@ -6,7 +6,6 @@ import 'package:isar_community/isar.dart';
 import 'package:ketchup_flutter/src/core/storage/app_isar.dart';
 import 'package:ketchup_flutter/src/features/diary/data/local/isar_diary_entry.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 /// Holds the active [Isar] instance and supports safe restore with rollback.
 class IsarController extends StateNotifier<Isar> {
@@ -16,7 +15,7 @@ class IsarController extends StateNotifier<Isar> {
 
   /// Exports a compacted snapshot (safe while DB is open).
   Future<Uint8List> exportCompactedBytes() async {
-    final Directory dir = await getApplicationDocumentsDirectory();
+    final Directory dir = Directory(state.directory!);
     final String tmpPath = p.join(
       dir.path,
       'ketchup_export_${DateTime.now().millisecondsSinceEpoch}.isar',
@@ -40,15 +39,13 @@ class IsarController extends StateNotifier<Isar> {
     Uint8List bytes, {
     Future<void> Function(Isar isar)? afterOpen,
   }) async {
-    final Directory dir = await getApplicationDocumentsDirectory();
-    final String mainPath = p.join(dir.path, AppIsar.fileName);
-    final String rollbackPath = p.join(
-      dir.path,
-      '${AppIsar.fileName}.rollback',
-    );
+    final Directory dir = Directory(state.directory!);
+    final String mainPath = p.join(dir.path, '${state.name}.isar');
+    final String rollbackPath = p.join(dir.path, '${state.name}.isar.rollback');
     final File mainFile = File(mainPath);
     final File rollbackFile = File(rollbackPath);
 
+    final dbName = state.name;
     await state.close();
 
     try {
@@ -60,7 +57,10 @@ class IsarController extends StateNotifier<Isar> {
 
       await mainFile.writeAsBytes(bytes, flush: true);
 
-      final Isar reopened = await AppIsar.open();
+      final Isar reopened = await AppIsar.open(
+        name: dbName,
+        directory: dir.path,
+      );
       await reopened.txn(() async {
         await reopened.isarDiaryEntrys.count();
       });
@@ -77,7 +77,7 @@ class IsarController extends StateNotifier<Isar> {
       } catch (copyErr) {
         debugPrint('rollback copy failed: $copyErr');
       }
-      state = await AppIsar.open();
+      state = await AppIsar.open(name: dbName, directory: dir.path);
       rethrow;
     } finally {
       if (await rollbackFile.exists()) {

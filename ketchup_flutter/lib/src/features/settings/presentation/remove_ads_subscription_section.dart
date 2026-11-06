@@ -52,7 +52,15 @@ class _RemoveAdsSubscriptionSectionState
           (purchases) {
             if (!mounted || !_buying) return;
             for (final purchase in purchases) {
-              if (purchase.productID != RemoveAdsIapIds.subscriptionProductId ||
+              // Play cancellation/error callbacks can have no product ID.
+              // Only accept these while this screen has an active purchase.
+              final bool unidentifiedFailure =
+                  purchase.productID.isEmpty &&
+                  (purchase.status == PurchaseStatus.canceled ||
+                      purchase.status == PurchaseStatus.error);
+              if ((!unidentifiedFailure &&
+                      purchase.productID !=
+                          RemoveAdsIapIds.subscriptionProductId) ||
                   purchase.status == PurchaseStatus.pending) {
                 continue;
               }
